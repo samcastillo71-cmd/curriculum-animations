@@ -295,7 +295,7 @@ function drawMolecule(t){
     ctx.strokeStyle=rgba(C.mol,.55);ctx.lineWidth=.8;
     ctx.beginPath();ctx.moveTo(mx+r,my);ctx.lineTo(mx+22,my);ctx.stroke();
     ctx.font='bold 9px system-ui';ctx.fillStyle=rgba(C.mol,.92);
-    ctx.fillText('bitter molecule',mx+24,my+3);
+    ctx.fillText('BITTER MOLECULE',mx+24,my+3);
     ctx.globalAlpha=1;
   }
   if(bind>0){
@@ -355,16 +355,16 @@ function drawTongueInset(t){
 function leader_(tx,ty,lx,ly,label,right,al){
   if((al||0)<=0.01)return;
   ctx.save();ctx.globalAlpha=al;
-  ctx.strokeStyle=rgba(C.lbl,.26);ctx.lineWidth=.85;
+  ctx.strokeStyle=rgba(C.lbl,.45);ctx.lineWidth=.85;
   ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(lx,ly);ctx.stroke();
-  ctx.font='8px system-ui';ctx.fillStyle=rgba(C.lbl,.40);
+  ctx.font='9px system-ui';ctx.fillStyle=rgba(C.lbl,.72);
   ctx.textAlign=right?'right':'left';
   ctx.fillText(label,lx+(right?-4:4),ly+3);
   ctx.textAlign='left';ctx.restore();
 }
 
 function drawLabels(t,recAct,cascadeWave){
-  const MAX=0.52,DIM=0.18;
+  const MAX=0.82,DIM=0.16;
   const g1=sm(ph(t,.06,.16))*(t<.32?MAX:DIM);
   const g2=sm(ph(t,.28,.38))*(t<.52?MAX:DIM);
   const g3=sm(ph(t,.48,.58))*(t<.72?MAX:DIM);
@@ -448,7 +448,7 @@ function drawSignal(t){
   hg.addColorStop(0,rgba(C.sig,.88));hg.addColorStop(1,rgba(C.sig,0));
   ctx.fillStyle=hg;ctx.beginPath();ctx.arc(hx,hy,16,0,Math.PI*2);ctx.fill();
   ctx.fillStyle=rgb(C.sig);ctx.beginPath();ctx.arc(hx,hy,5,0,Math.PI*2);ctx.fill();
-  ctx.font='8.5px system-ui';ctx.fillStyle=rgba(C.lbl,.28);ctx.fillText('gustatory nerve',412,278);
+  ctx.font='8.5px system-ui';ctx.fillStyle=rgba(C.lbl,.28);ctx.fillText('GUSTATORY NERVE',412,278);
   if(p>.04){ctx.font='bold 8.5px system-ui';ctx.fillStyle=rgba(C.sig,.78);ctx.fillText('NERVE SIGNAL SENT',282,278);}
   const brainAlpha=p>.87?sm(cl01((p-.87)/.13)):(p>.05?.22:0);
   if(brainAlpha>.01)drawBrain(brainAlpha);
@@ -514,7 +514,7 @@ document.getElementById('btn-restart').addEventListener('click',()=>{
 function togglePlay(){running=!running;btnPlay.textContent=running?'Pause':'Play';if(running){lastTs=null;requestAnimationFrame(loop);}}
 btnPlay.addEventListener('click',togglePlay);
 document.getElementById('cvs').addEventListener('click',togglePlay);
-const STEP_T=[0.20,0.40,0.60,0.80];
+const STEP_T=[0.20,0.40,0.63,0.80];
 ['s0','s1','s2','s3'].forEach((id,i)=>{
   document.getElementById(id).addEventListener('click',e=>{
     e.stopPropagation();t=STEP_T[i];lastTs=null;
