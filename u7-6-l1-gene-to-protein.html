@@ -105,9 +105,8 @@ function drawDNA(geneAct){
   ctx.strokeStyle=rgba(C.dna2,.80);ctx.lineWidth=2.2;ctx.stroke();
   if(geneAct>.04){
     const gy=(GENE_TOP+GENE_BOT)/2,gh=(GENE_BOT-GENE_TOP)/2+12;
-    const gg=ctx.createRadialGradient(DNA_CX,gy,0,DNA_CX,gy,DNA_AMP+22);
-    gg.addColorStop(0,rgba(C.gene,geneAct*.50));gg.addColorStop(1,rgba(C.gene,0));
-    ctx.fillStyle=gg;ctx.beginPath();ctx.ellipse(DNA_CX,gy,DNA_AMP+22,gh,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=rgba(C.gene,geneAct*.38);
+    ctx.beginPath();ctx.ellipse(DNA_CX,gy,DNA_AMP+22,gh,0,0,Math.PI*2);ctx.fill();
     const la=cl01((geneAct-.16)/.24);
     if(la>.02){
       ctx.save();ctx.globalAlpha=la;
@@ -211,11 +210,8 @@ function drawProtein(protT,foldT){
       ctx.restore();
     }
     const col=C.prot[i%C.prot.length];
-    const ag=ctx.createRadialGradient(x-AA_R*.3,y-AA_R*.3,0,x,y,AA_R);
-    ag.addColorStop(0,rgba(col.map(v=>Math.min(255,Math.round(v*1.3))),.96));
-    ag.addColorStop(1,rgba(col,.88));
     ctx.save();ctx.globalAlpha=fa;
-    ctx.beginPath();ctx.arc(x,y,AA_R,0,Math.PI*2);ctx.fillStyle=ag;ctx.fill();
+    ctx.beginPath();ctx.arc(x,y,AA_R,0,Math.PI*2);ctx.fillStyle=_protCols[i%_protCols.length];ctx.fill();
     ctx.restore();
   }
   if(protT>.12&&foldT<.5){
@@ -276,9 +272,10 @@ function draw(t){
   ['s0','s1','s2','s3'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',i===activeStep(t)));
 }
 
-// Pre-compute stable color strings to avoid per-frame array allocation
+// Pre-compute stable color strings to avoid per-frame allocation
 const _ribBdr=rgba(C.rib.map(v=>Math.round(v*.5)),.50);
 const _ribSmBdr=rgba(C.ribSm.map(v=>Math.round(v*.5)),.50);
+const _protCols=C.prot.map(col=>rgba(col,.92));
 
 let t=0,running=true,lastTs=null;
 const MAX_DELTA=80; // cap time-delta to prevent stage jumps on tab-switch / hiccup
