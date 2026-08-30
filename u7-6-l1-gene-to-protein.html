@@ -173,14 +173,13 @@ function drawRibosome(ribAct){
   const tY=cy-CHAN-RIB_BH,bY=cy-CHAN;
   if(!_ribGradT){_ribGradT=ctx.createLinearGradient(cx,tY,cx,bY);_ribGradT.addColorStop(0,rgba(C.rib.map(v=>Math.min(255,Math.round(v*1.38))),.95));_ribGradT.addColorStop(1,rgba(C.rib,.90));}
   ctx.beginPath();ctx.roundRect(cx-RIB_BW/2,tY,RIB_BW,RIB_BH,10);ctx.fillStyle=_ribGradT;ctx.fill();
-  ctx.strokeStyle=rgba(C.rib.map(v=>Math.round(v*.5)),.50);ctx.lineWidth=1;ctx.stroke();
+  ctx.strokeStyle=_ribBdr;ctx.lineWidth=1;ctx.stroke();
   if(!_ribGradH){_ribGradH=ctx.createRadialGradient(cx-RIB_BW*.22,tY+7,0,cx-RIB_BW*.22,tY+7,RIB_BW*.38);_ribGradH.addColorStop(0,rgba([255,255,255],.22));_ribGradH.addColorStop(1,rgba([255,255,255],0));}
   ctx.fillStyle=_ribGradH;ctx.beginPath();ctx.roundRect(cx-RIB_BW/2,tY,RIB_BW,RIB_BH,10);ctx.fill();
   const sY=cy+CHAN;
   if(!_ribGradB){_ribGradB=ctx.createLinearGradient(cx,sY,cx,sY+RIB_SH);_ribGradB.addColorStop(0,rgba(C.ribSm,.92));_ribGradB.addColorStop(1,rgba(C.ribSm.map(v=>Math.round(v*.68)),.88));}
-  const sg=_ribGradB;
-  ctx.beginPath();ctx.roundRect(cx-RIB_SW/2,sY,RIB_SW,RIB_SH,8);ctx.fillStyle=sg;ctx.fill();
-  ctx.strokeStyle=rgba(C.ribSm.map(v=>Math.round(v*.5)),.50);ctx.lineWidth=1;ctx.stroke();
+  ctx.beginPath();ctx.roundRect(cx-RIB_SW/2,sY,RIB_SW,RIB_SH,8);ctx.fillStyle=_ribGradB;ctx.fill();
+  ctx.strokeStyle=_ribSmBdr;ctx.lineWidth=1;ctx.stroke();
   ctx.font='12px system-ui';ctx.fillStyle=rgba(C.lbl,.34);
   ctx.textAlign='center';ctx.fillText('RIBOSOME',cx,tY-9);ctx.textAlign='left';
   ctx.restore();
@@ -277,11 +276,21 @@ function draw(t){
   ['s0','s1','s2','s3'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',i===activeStep(t)));
 }
 
+// Pre-compute stable color strings to avoid per-frame array allocation
+const _ribBdr=rgba(C.rib.map(v=>Math.round(v*.5)),.50);
+const _ribSmBdr=rgba(C.ribSm.map(v=>Math.round(v*.5)),.50);
+
 let t=0,running=true,lastTs=null;
+const MAX_DELTA=80; // cap time-delta to prevent stage jumps on tab-switch / hiccup
+const TARGET_MS=1000/30; // 30fps ceiling — animation is slow enough that 30fps is imperceptible
+let _frameDue=0;
 function loop(ts){
   if(!running)return;
-  if(lastTs!==null)t=(t+(ts-lastTs)/CYCLE)%1;
-  lastTs=ts;draw(t);requestAnimationFrame(loop);
+  requestAnimationFrame(loop);
+  if(ts<_frameDue)return;
+  _frameDue=ts+TARGET_MS-4;
+  if(lastTs!==null){const dt=Math.min(ts-lastTs,MAX_DELTA);t=(t+dt/CYCLE)%1;}
+  lastTs=ts;draw(t);
 }
 const btnPlay=document.getElementById('btn-play');
 document.getElementById('btn-restart').addEventListener('click',()=>{t=0;lastTs=null;if(!running){running=true;btnPlay.textContent='Pause';requestAnimationFrame(loop);}});
