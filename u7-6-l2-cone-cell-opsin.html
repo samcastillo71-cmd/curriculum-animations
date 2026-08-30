@@ -524,7 +524,7 @@ function drawNeuron(t){
   // "nerve impulse sent" — above the nerve path midpoint
   if(axonP>.1){
     ctx.font='bold 9px system-ui';ctx.fillStyle=rgba(C.sig,.72);
-    ctx.fillText('nerve impulse sent',360,264);
+    ctx.fillText('NERVE IMPULSE SENT',360,264);
   }
   // brain blob — dim hint while axon fires, fully lit when signal arrives
   const brainAlpha=termP>.15?sm(termP):(axonP>.05?.22:0);

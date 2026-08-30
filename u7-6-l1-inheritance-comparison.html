@@ -1,4 +1,4 @@
-<title>Sex-Linked vs Autosomal</title>
+﻿<title>Sex-Linked vs Autosomal</title>
 <style>
   :root{--bg:#EDE6EA;--card:#FFFFFF;--text:#1A0812;--muted:#70566A;--accent:#6B1738;--step-bg:#DDD4DA;--step-active:#6B1738;--step-act-text:#FFFFFF;--btn-sec:#DDD4DA;--btn-sec-text:#5A3848;}
   @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D0408;--card:#180810;--text:#E8D4DE;--muted:#886878;--accent:#CC3060;--step-bg:#220C16;--step-active:#CC3060;--step-act-text:#0D0408;--btn-sec:#220C16;--btn-sec-text:#886878;}}
@@ -245,23 +245,23 @@ function drawResults(resultT){
   ctx.globalAlpha=resultT;
   ctx.fillStyle=rgba([62,12,30],.65);ctx.beginPath();ctx.roundRect(LGX-52,by,bw,96,5);ctx.fill();
   ctx.strokeStyle=rgba(AC.Xc,.45);ctx.lineWidth=.8;ctx.stroke();
-  ctx.font=’bold 11px system-ui’;ctx.fillStyle=rgba(AC.Xc,.90);
-  ctx.textAlign=’center’;ctx.fillText(‘Sons have just 1 X chromosome.’,LGX+CW,by+17);
-  ctx.font=’10px system-ui’;ctx.fillStyle=rgba(LBL,.55);
-  ctx.fillText(‘Inherit Xᶜ from mom? No backup allele.’,LGX+CW,by+34);
-  ctx.fillText(‘No second copy to override it.’,LGX+CW,by+51);
-  ctx.fillText(‘→ 50% of sons are colorblind.’,LGX+CW,by+68);
+  ctx.font='bold 11px system-ui';ctx.fillStyle=rgba(AC.Xc,.90);
+  ctx.textAlign='center';ctx.fillText('Sons have just 1 X chromosome.',LGX+CW,by+17);
+  ctx.font='10px system-ui';ctx.fillStyle=rgba(LBL,.55);
+  ctx.fillText('Inherit Xᶜ from mom? No backup allele.',LGX+CW,by+34);
+  ctx.fillText('No second copy to override it.',LGX+CW,by+51);
+  ctx.fillText('→ 50% of sons are colorblind.',LGX+CW,by+68);
 
   // Right callout
   ctx.fillStyle=rgba([52,30,8],.65);ctx.beginPath();ctx.roundRect(RGX-52,by,bw,96,5);ctx.fill();
   ctx.strokeStyle=rgba(AC.b,.45);ctx.lineWidth=.8;ctx.stroke();
-  ctx.font=’bold 11px system-ui’;ctx.fillStyle=rgba(AC.b,.90);
-  ctx.fillText(‘Every child gets 2 copies.’,RGX+CW,by+17);
-  ctx.font=’10px system-ui’;ctx.fillStyle=rgba(LBL,.55);
-  ctx.fillText(‘Need bb to show the trait.’,RGX+CW,by+34);
-  ctx.fillText(‘Both sexes equally at risk.’,RGX+CW,by+51);
-  ctx.fillText(‘→ 25% of all children’,RGX+CW,by+68);
-  ctx.fillText(‘show the recessive trait.’,RGX+CW,by+82);
+  ctx.font='bold 11px system-ui';ctx.fillStyle=rgba(AC.b,.90);
+  ctx.fillText('Every child gets 2 copies.',RGX+CW,by+17);
+  ctx.font='10px system-ui';ctx.fillStyle=rgba(LBL,.55);
+  ctx.fillText('Need bb to show the trait.',RGX+CW,by+34);
+  ctx.fillText('Both sexes equally at risk.',RGX+CW,by+51);
+  ctx.fillText('→ 25% of all children',RGX+CW,by+68);
+  ctx.fillText('show the recessive trait.',RGX+CW,by+82);
 
   ctx.textAlign='left';ctx.restore();
 }

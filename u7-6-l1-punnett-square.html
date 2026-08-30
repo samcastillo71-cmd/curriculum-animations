@@ -40,6 +40,8 @@
 <script>
 const cv=document.getElementById('cvs'),ctx=cv.getContext('2d');
 const W=cv.width,H=cv.height;
+const _dpr=window.devicePixelRatio||1,_sc=Math.max(2,_dpr);
+cv.width=W*_sc;cv.height=H*_sc;ctx.scale(_sc,_sc);
 const cl01=x=>Math.max(0,Math.min(1,x));
 const lerp=(a,b,t)=>a+(b-a)*t;
 const sm=t=>t*t*(3-2*t);
