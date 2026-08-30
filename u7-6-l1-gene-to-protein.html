@@ -134,8 +134,8 @@ function drawNucleusMembrane(){
 }
 
 function drawMRNA(t){
-  const buildT=sm(ph(t,.22,.44));
-  const exitT=eo3(ph(t,.45,.60));
+  const buildT=sm(ph(t,.22,.42));
+  const exitT=eo3(ph(t,.43,.56));
   if(buildT<=0)return;
   let rightX;
   if(buildT<1){
@@ -241,8 +241,8 @@ function drawProtein(protT,foldT){
 function activeStep(t){
   if(t<.08)return -1;
   if(t<.22)return 0;
-  if(t<.45)return 1;
-  if(t<.62)return 2;
+  if(t<.43)return 1;
+  if(t<.57)return 2;
   if(t<.95)return 3;
   return -1;
 }
@@ -250,10 +250,10 @@ function activeStep(t){
 function draw(t){
   drawBg();
   const appear=sm(ph(t,.01,.10));
-  const geneAct=sm(ph(t,.08,.24))*(1-sm(ph(t,.54,.66)));
-  const ribAct=sm(ph(t,.48,.62));
-  const protT=ph(t,.62,.92);
-  const foldT=sm(ph(t,.88,.97));
+  const geneAct=sm(ph(t,.08,.24))*(1-sm(ph(t,.52,.62)));
+  const ribAct=sm(ph(t,.46,.58));
+  const protT=ph(t,.57,.89);
+  const foldT=eo3(ph(t,.82,.95));
 
   ctx.save();ctx.globalAlpha=appear;
   if(!_nucGrad){_nucGrad=ctx.createRadialGradient(NUC_CX-18,NUC_CY-18,0,NUC_CX,NUC_CY,NUC_R);_nucGrad.addColorStop(0,rgba(C.nuc.map(v=>Math.round(v*1.38)),.92));_nucGrad.addColorStop(1,rgba(C.nuc,.85));}
@@ -297,7 +297,7 @@ document.getElementById('btn-restart').addEventListener('click',()=>{t=0;lastTs=
 function togglePlay(){running=!running;btnPlay.textContent=running?'Pause':'Play';if(running){lastTs=null;requestAnimationFrame(loop);}}
 btnPlay.addEventListener('click',togglePlay);
 document.getElementById('cvs').addEventListener('click',togglePlay);
-const STEP_T=[0.20,0.42,0.60,0.85];
+const STEP_T=[0.20,0.40,0.55,0.80];
 ['s0','s1','s2','s3'].forEach((id,i)=>{
   document.getElementById(id).addEventListener('click',e=>{
     e.stopPropagation();
