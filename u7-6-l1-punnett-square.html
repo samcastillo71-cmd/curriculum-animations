@@ -1,0 +1,323 @@
+<title>X-Linked Inheritance</title>
+<style>
+  :root{--bg:#EDE6EA;--card:#FFFFFF;--text:#1A0812;--muted:#70566A;--accent:#6B1738;--step-bg:#DDD4DA;--step-active:#6B1738;--step-act-text:#FFFFFF;--btn-sec:#DDD4DA;--btn-sec-text:#5A3848;}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D0408;--card:#180810;--text:#E8D4DE;--muted:#886878;--accent:#CC3060;--step-bg:#220C16;--step-active:#CC3060;--step-act-text:#0D0408;--btn-sec:#220C16;--btn-sec-text:#886878;}}
+  :root[data-theme="dark"]{--bg:#0D0408;--card:#180810;--text:#E8D4DE;--muted:#886878;--accent:#CC3060;--step-bg:#220C16;--step-active:#CC3060;--step-act-text:#0D0408;--btn-sec:#220C16;--btn-sec-text:#886878;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:2rem 1rem 3rem}
+  header{text-align:center;margin-bottom:1.25rem}
+  h1{font-size:1.35rem;font-weight:700;letter-spacing:-.015em;margin-bottom:.3rem}
+  .subtitle{font-size:.82rem;color:var(--muted)}
+  .card{background:var(--card);border-radius:16px;padding:1.125rem 1.125rem 1rem;box-shadow:0 2px 20px rgba(0,0,0,.10),0 1px 4px rgba(0,0,0,.06);max-width:724px;width:100%;display:flex;flex-direction:column;gap:.875rem}
+  canvas{border-radius:10px;display:block;width:100%;height:auto;cursor:pointer}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem}
+  @media(max-width:500px){.steps{grid-template-columns:repeat(2,1fr)}}
+  .step{padding:.45rem .5rem;border-radius:7px;font-size:.74rem;font-weight:500;text-align:center;background:var(--step-bg);color:var(--muted);transition:background .35s,color .35s;line-height:1.35;cursor:pointer;user-select:none}
+  .step.active{background:var(--step-active);color:var(--step-act-text);font-weight:600}
+  .step-num{display:block;font-size:.62rem;font-weight:600;opacity:.6;margin-bottom:.15rem;letter-spacing:.04em}
+  .controls{display:flex;gap:.5rem;justify-content:center}
+  button{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:.45rem 1.4rem;font-size:.82rem;font-weight:600;cursor:pointer;letter-spacing:.01em;transition:opacity .15s}
+  button:hover{opacity:.82}
+  button.sec{background:var(--btn-sec);color:var(--btn-sec-text)}
+</style>
+<header>
+  <h1>Unit 7.6 &middot; L1 &mdash; X-Linked Inheritance</h1>
+  <p class="subtitle">How colorblindness passes through families &mdash; Becky&rsquo;s explanation</p>
+</header>
+<div class="card">
+  <canvas id="cvs" width="680" height="356"></canvas>
+  <div class="steps">
+    <div class="step" id="s0"><span class="step-num">STEP 1</span>Mom is a carrier</div>
+    <div class="step" id="s1"><span class="step-num">STEP 2</span>Gametes separate</div>
+    <div class="step" id="s2"><span class="step-num">STEP 3</span>Alleles combine</div>
+    <div class="step" id="s3"><span class="step-num">STEP 4</span>1 in 2 sons: colorblind</div>
+  </div>
+  <div class="controls">
+    <button id="btn-play">Pause</button>
+    <button id="btn-restart" class="sec">Restart</button>
+  </div>
+</div>
+<script>
+const cv=document.getElementById('cvs'),ctx=cv.getContext('2d');
+const W=cv.width,H=cv.height;
+const cl01=x=>Math.max(0,Math.min(1,x));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const sm=t=>t*t*(3-2*t);
+const eo3=t=>1-Math.pow(1-t,3);
+const ph=(t,s,e)=>cl01((t-s)/(e-s));
+const rgb=([r,g,b])=>`rgb(${r},${g},${b})`;
+const rgba=([r,g,b],a)=>`rgba(${r},${g},${b},${a})`;
+
+const C={
+  bg:[10,4,8],bgG:[20,8,15],
+  XN:[68,145,222],Xc:[200,40,88],Y:[95,125,160],
+  grid:[55,78,118],cell:[16,26,48],
+  cellCB:[62,12,30],cellCarrier:[20,40,72],
+  lbl:[172,204,232],
+};
+
+// Grid geometry
+const GX=214,GY=130,CW=92,CH=80;
+// Column headers — dad's gametes (above grid)
+const COL=[{cx:GX+CW/2,cy:90},{cx:GX+3*CW/2,cy:90}];
+// Row headers — mom's gametes (left of grid)
+const ROW=[{cx:158,cy:GY+CH/2},{cx:158,cy:GY+3*CH/2}];
+// Parent allele start positions (before separation)
+const MOM_XN_START={x:85,y:158},MOM_XC_START={x:85,y:178};
+const DAD_XN_START={x:244,y:38},DAD_Y_START={x:316,y:38};
+// Cells
+const CELLS=[
+  {r:0,c:0,mom:'XN',dad:'XN',geno:'XᴺXᴺ',pheno:'Normal daughter',  type:'normal',    stagger:0},
+  {r:0,c:1,mom:'XN',dad:'Y', geno:'XᴺY',  pheno:'Normal son',       type:'normal',    stagger:0.04, front:'mom'},
+  {r:1,c:0,mom:'Xc',dad:'XN',geno:'XᴺXᶜ',pheno:'Carrier daughter', type:'carrier',   stagger:0.08, front:'dad'},
+  {r:1,c:1,mom:'Xc',dad:'Y', geno:'XᶜY',  pheno:'Colorblind son',   type:'colorblind',stagger:0.12, front:'mom'},
+];
+const CYCLE=12000;
+
+function drawBg(){
+  const g=ctx.createRadialGradient(W*.35,H*.45,0,W*.35,H*.45,W*.85);
+  g.addColorStop(0,rgb(C.bgG));g.addColorStop(1,rgb(C.bg));
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+
+function pill(cx,cy,type,al,sc){
+  sc=sc||1;const col=C[type];
+  const pw=36*sc,ph=22*sc,r=ph/2;
+  ctx.save();ctx.globalAlpha=al;
+  const g=ctx.createLinearGradient(cx,cy-ph/2,cx,cy+ph/2);
+  g.addColorStop(0,rgba(col.map(v=>Math.min(255,(v*1.4+20)|0)),.96));
+  g.addColorStop(1,rgba(col,.90));
+  ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(cx-pw/2,cy-ph/2,pw,ph,r);ctx.fill();
+  ctx.strokeStyle=rgba(col.map(v=>(v*.5)|0),.50);ctx.lineWidth=.8;ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,.95)';ctx.textBaseline='middle';ctx.textAlign='center';
+  if(type==='Y'){
+    ctx.font=`bold ${11*sc}px system-ui`;ctx.fillText('Y',cx,cy);
+  } else {
+    ctx.font=`bold ${11*sc}px system-ui`;ctx.fillText('X',cx-4*sc,cy);
+    ctx.font=`bold ${7.5*sc}px system-ui`;
+    ctx.fillText(type==='XN'?'N':'c',cx+5.5*sc,cy-3.5*sc);
+  }
+  ctx.textBaseline='alphabetic';ctx.textAlign='left';ctx.restore();
+}
+
+function drawParents(parentT){
+  if(parentT<=0)return;
+  ctx.save();ctx.globalAlpha=parentT;
+  // Mom label
+  ctx.font='bold 9px system-ui';ctx.fillStyle=rgba(C.lbl,.65);
+  ctx.textAlign='center';ctx.fillText('MOM',85,138);
+  ctx.font='8px system-ui';ctx.fillStyle=rgba(C.lbl,.38);
+  ctx.fillText('carrier',85,150);ctx.textAlign='left';
+  // Dad label
+  ctx.font='bold 9px system-ui';ctx.fillStyle=rgba(C.lbl,.65);
+  ctx.textAlign='center';ctx.fillText('DAD',280,18);
+  ctx.font='8px system-ui';ctx.fillStyle=rgba(C.lbl,.38);
+  ctx.fillText('normal vision',280,29);ctx.textAlign='left';
+  // Mom's allele pair (before separation)
+  pill(MOM_XN_START.x,MOM_XN_START.y,'XN',parentT,0.88);
+  pill(MOM_XC_START.x,MOM_XC_START.y,'Xc',parentT,0.88);
+  // Dad's allele pair
+  pill(DAD_XN_START.x,DAD_XN_START.y,'XN',parentT,0.88);
+  pill(DAD_Y_START.x, DAD_Y_START.y, 'Y', parentT,0.88);
+  ctx.restore();
+}
+
+function drawHeaders(sepT,parentT){
+  // Mom's alleles slide from start positions to row header positions
+  const mxnX=lerp(MOM_XN_START.x,ROW[0].cx,sepT);
+  const mxnY=lerp(MOM_XN_START.y,ROW[0].cy,sepT);
+  const mxcX=lerp(MOM_XC_START.x,ROW[1].cx,sepT);
+  const mxcY=lerp(MOM_XC_START.y,ROW[1].cy,sepT);
+  // Dad's alleles slide from start to col header positions
+  const dxnX=lerp(DAD_XN_START.x,COL[0].cx,sepT);
+  const dxnY=lerp(DAD_XN_START.y,COL[0].cy,sepT);
+  const dyX=lerp(DAD_Y_START.x,COL[1].cx,sepT);
+  const dyY=lerp(DAD_Y_START.y,COL[1].cy,sepT);
+  const al=Math.max(parentT,sepT);
+  pill(mxnX,mxnY,'XN',al,1.0);
+  pill(mxcX,mxcY,'Xc',al,1.0);
+  pill(dxnX,dxnY,'XN',al,1.0);
+  pill(dyX, dyY, 'Y', al,1.0);
+  // "one allele each" arrow cues during separation
+  if(sepT>.15&&sepT<.80){
+    const arAl=sepT*(1-sepT)*4*.55;
+    ctx.save();ctx.globalAlpha=arAl;ctx.fillStyle=rgba(C.lbl,.7);
+    // Mom arrow pointing right
+    ctx.beginPath();ctx.moveTo(108,168);ctx.lineTo(122,168);ctx.lineTo(116,162);ctx.moveTo(122,168);ctx.lineTo(116,174);ctx.stroke&&ctx.stroke();
+    ctx.restore();
+  }
+  // "gamete" labels once separated
+  if(sepT>.7){
+    const la=cl01((sepT-.7)/.2);
+    ctx.save();ctx.globalAlpha=la;ctx.font='7.5px system-ui';ctx.fillStyle=rgba(C.lbl,.36);
+    ctx.textAlign='right';ctx.fillText('mom gametes →',ROW[0].cx-22,ROW[0].cy+3);ctx.textAlign='left';
+    ctx.textAlign='center';ctx.fillText("dad's gametes",COL[0].cx+CW/2,COL[0].cy-16);ctx.textAlign='left';
+    ctx.restore();
+  }
+}
+
+function drawGrid(gridT){
+  if(gridT<=0)return;
+  ctx.save();ctx.globalAlpha=gridT;
+  // Cell backgrounds
+  CELLS.forEach(cell=>{
+    const x=GX+cell.c*CW,y=GY+cell.r*CH;
+    const bg=cell.type==='colorblind'?C.cellCB:cell.type==='carrier'?C.cellCarrier:C.cell;
+    ctx.fillStyle=rgba(bg,.88);
+    ctx.beginPath();ctx.roundRect(x+1,y+1,CW-2,CH-2,3);ctx.fill();
+  });
+  // Grid lines
+  ctx.strokeStyle=rgba(C.grid,.55);ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.roundRect(GX,GY,CW*2,CH*2,5);ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(GX+CW,GY);ctx.lineTo(GX+CW,GY+CH*2);
+  ctx.moveTo(GX,GY+CH);ctx.lineTo(GX+CW*2,GY+CH);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawCellFill(fillT){
+  CELLS.forEach(cell=>{
+    const fa=sm(cl01((fillT-cell.stagger)/.28));
+    if(fa<=0)return;
+    const cx=GX+cell.c*CW+CW/2,cy=GY+cell.r*CH+CH/2;
+    // Mom allele travels from row header into cell (slides right)
+    const mx=lerp(ROW[cell.r].cx+20,cx-10,sm(fa));
+    const my=lerp(ROW[cell.r].cy,cy,sm(fa));
+    // Dad allele travels from col header into cell (slides down)
+    const dx=lerp(COL[cell.c].cx,cx+(cell.dad==='Y'?9:-9),sm(fa));
+    const dy=lerp(COL[cell.c].cy+20,cy,sm(fa));
+    const mF=cell.front==='mom',dF=cell.front==='dad';
+    const mSc=mF?.88:dF?.55:.78, mAl=mF?fa*.94:dF?fa*.46:fa*.92;
+    const dSc=dF?.88:mF?.55:.78, dAl=dF?fa*.94:mF?fa*.46:fa*.92;
+    if(mF){pill(dx,dy,cell.dad,dAl,dSc);pill(mx,my,cell.mom,mAl,mSc);}
+    else if(dF){pill(mx,my,cell.mom,mAl,mSc);pill(dx,dy,cell.dad,dAl,dSc);}
+    else{pill(mx,my,cell.mom,mAl,mSc);pill(dx,dy,cell.dad,dAl,dSc);}
+    // Phenotype label fades in once arrived
+    if(fa>.55){
+      const la=cl01((fa-.55)/.3);
+      ctx.save();ctx.globalAlpha=la;
+      ctx.font='7.5px system-ui';
+      const txtCol=cell.type==='colorblind'?C.Xc:cell.type==='carrier'?C.XN:C.lbl;
+      ctx.fillStyle=rgba(txtCol,cell.type==='normal'?.32:.50);
+      ctx.textAlign='center';
+      ctx.fillText(cell.pheno.split(' ')[0],cx,cy+22);
+      ctx.fillText(cell.pheno.split(' ')[1]||'',cx,cy+32);
+      ctx.textAlign='left';ctx.restore();
+    }
+  });
+}
+
+function drawResults(resultT){
+  if(resultT<=0)return;
+  ctx.save();ctx.globalAlpha=resultT;
+  // Colorblind cell glow
+  const cbX=GX+CW,cbY=GY+CH;
+  const gg=ctx.createRadialGradient(cbX+CW/2,cbY+CH/2,0,cbX+CW/2,cbY+CH/2,55);
+  gg.addColorStop(0,rgba(C.Xc,.38));gg.addColorStop(1,rgba(C.Xc,0));
+  ctx.fillStyle=gg;ctx.beginPath();ctx.ellipse(cbX+CW/2,cbY+CH/2,55,44,0,0,Math.PI*2);ctx.fill();
+  // Colorblind cell border highlight
+  ctx.strokeStyle=rgba(C.Xc,.70);ctx.lineWidth=2.2;
+  ctx.beginPath();ctx.roundRect(cbX+1,cbY+1,CW-2,CH-2,3);ctx.stroke();
+
+  // Right panel summary
+  const RX=GX+CW*2+22,RY=GY+4;
+  ctx.font='bold 9px system-ui';ctx.fillStyle=rgba(C.lbl,.55);
+  ctx.fillText('OUTCOMES',RX,RY+10);
+  ctx.strokeStyle=rgba(C.lbl,.20);ctx.lineWidth=.8;
+  ctx.beginPath();ctx.moveTo(RX,RY+14);ctx.lineTo(RX+200,RY+14);ctx.stroke();
+
+  const outcomes=[
+    {label:'Normal daughter',col:C.XN,al:.38},
+    {label:'Normal son',col:C.XN,al:.38},
+    {label:'Carrier daughter',col:C.XN,al:.46},
+    {label:'Colorblind son',col:C.Xc,al:.80},
+  ];
+  outcomes.forEach((o,i)=>{
+    const oy=RY+30+i*26;
+    ctx.beginPath();ctx.arc(RX+7,oy,5,0,Math.PI*2);ctx.fillStyle=rgba(o.col,o.al+.2);ctx.fill();
+    ctx.font=(i===3?'bold ':'')+'8.5px system-ui';
+    ctx.fillStyle=rgba(o.col,o.al+(i===3?.15:0));
+    ctx.fillText(o.label,RX+17,oy+3.5);
+  });
+
+  // Probability callout
+  const py=RY+142;
+  ctx.fillStyle=rgba(C.cellCB,.72);
+  ctx.beginPath();ctx.roundRect(RX,py,200,46,6);ctx.fill();
+  ctx.strokeStyle=rgba(C.Xc,.60);ctx.lineWidth=1;ctx.stroke();
+  ctx.font='bold 9px system-ui';ctx.fillStyle=rgba(C.Xc,.92);
+  ctx.fillText('50% of sons are colorblind',RX+10,py+15);
+  ctx.font='8px system-ui';ctx.fillStyle=rgba(C.lbl,.60);
+  ctx.fillText('(like Joe — Xᶜ inherits from',RX+10,py+28);
+  ctx.fillText('carrier mom, no backup copy)',RX+10,py+40);
+  ctx.restore();
+}
+
+function activeStep(t){
+  if(t<.08)return -1;
+  if(t<.26)return 0;
+  if(t<.48)return 1;
+  if(t<.72)return 2;
+  if(t<.95)return 3;
+  return -1;
+}
+
+function draw(t){
+  drawBg();
+  const appear =sm(ph(t,.01,.10));
+  const parentT=sm(ph(t,.08,.24));
+  const sepT   =eo3(ph(t,.26,.48));
+  const gridT  =sm(ph(t,.24,.38));
+  const fillT  =ph(t,.48,.72);
+  const resultT=sm(ph(t,.72,.90));
+
+  ctx.save();ctx.globalAlpha=appear;
+  drawGrid(gridT);
+  ctx.restore();
+
+  // Headers animate on top of grid
+  ctx.save();ctx.globalAlpha=appear;
+  if(sepT<.02){
+    drawParents(parentT);
+  } else {
+    drawParents(cl01(1-sepT*3));
+    drawHeaders(sepT,parentT);
+  }
+  ctx.restore();
+
+  // Cell fill (alleles travel into grid)
+  if(fillT>0){
+    ctx.save();ctx.globalAlpha=appear;
+    drawHeaders(1,1); // keep headers static during fill
+    drawCellFill(fillT);
+    ctx.restore();
+  }
+
+  drawResults(resultT);
+
+  ['s0','s1','s2','s3'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',i===activeStep(t)));
+}
+
+let t=0,running=true,lastTs=null;
+function loop(ts){
+  if(!running)return;
+  if(lastTs!==null)t=(t+(ts-lastTs)/CYCLE)%1;
+  lastTs=ts;draw(t);requestAnimationFrame(loop);
+}
+const btnPlay=document.getElementById('btn-play');
+document.getElementById('btn-restart').addEventListener('click',()=>{t=0;lastTs=null;if(!running){running=true;btnPlay.textContent='Pause';requestAnimationFrame(loop);}});
+function togglePlay(){running=!running;btnPlay.textContent=running?'Pause':'Play';if(running){lastTs=null;requestAnimationFrame(loop);}}
+btnPlay.addEventListener('click',togglePlay);
+document.getElementById('cvs').addEventListener('click',togglePlay);
+const STEP_T=[0.22,0.46,0.70,0.88];
+['s0','s1','s2','s3'].forEach((id,i)=>{
+  document.getElementById(id).addEventListener('click',e=>{
+    e.stopPropagation();
+    t=STEP_T[i];lastTs=null;
+    if(running){running=false;btnPlay.textContent='Play';}
+    draw(t);
+  });
+});
+if(window.matchMedia('(prefers-reduced-motion:reduce)').matches){running=false;t=.60;btnPlay.textContent='Play';draw(t);}else{requestAnimationFrame(loop);}
+</script>

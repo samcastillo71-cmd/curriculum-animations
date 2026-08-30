@@ -1,0 +1,342 @@
+<title>Sex-Linked vs Autosomal</title>
+<style>
+  :root{--bg:#EDE6EA;--card:#FFFFFF;--text:#1A0812;--muted:#70566A;--accent:#6B1738;--step-bg:#DDD4DA;--step-active:#6B1738;--step-act-text:#FFFFFF;--btn-sec:#DDD4DA;--btn-sec-text:#5A3848;}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D0408;--card:#180810;--text:#E8D4DE;--muted:#886878;--accent:#CC3060;--step-bg:#220C16;--step-active:#CC3060;--step-act-text:#0D0408;--btn-sec:#220C16;--btn-sec-text:#886878;}}
+  :root[data-theme="dark"]{--bg:#0D0408;--card:#180810;--text:#E8D4DE;--muted:#886878;--accent:#CC3060;--step-bg:#220C16;--step-active:#CC3060;--step-act-text:#0D0408;--btn-sec:#220C16;--btn-sec-text:#886878;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:.75rem 1rem 1.5rem}
+  header{text-align:center;margin-bottom:1.25rem}
+  h1{font-size:1.35rem;font-weight:700;letter-spacing:-.015em;margin-bottom:.3rem}
+  .subtitle{font-size:.82rem;color:var(--muted)}
+  .card{background:var(--card);border-radius:16px;padding:1.125rem 1.125rem 1rem;box-shadow:0 2px 20px rgba(0,0,0,.10),0 1px 4px rgba(0,0,0,.06);max-width:1080px;width:100%;display:flex;flex-direction:column;gap:.875rem}
+  canvas{border-radius:10px;display:block;width:100%;height:auto;cursor:pointer}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem}
+  @media(max-width:500px){.steps{grid-template-columns:repeat(2,1fr)}}
+  .step{padding:.45rem .5rem;border-radius:7px;font-size:.88rem;font-weight:500;text-align:center;background:var(--step-bg);color:var(--muted);transition:background .35s,color .35s;line-height:1.35;cursor:pointer;user-select:none}
+  .step.active{background:var(--step-active);color:var(--step-act-text);font-weight:600}
+  .step-num{display:block;font-size:.72rem;font-weight:600;opacity:.6;margin-bottom:.15rem;letter-spacing:.04em}
+  .controls{display:flex;gap:.5rem;justify-content:center}
+  button{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:.45rem 1.4rem;font-size:.82rem;font-weight:600;cursor:pointer;letter-spacing:.01em;transition:opacity .15s}
+  button:hover{opacity:.82}
+  button.sec{background:var(--btn-sec);color:var(--btn-sec-text)}
+</style>
+<header>
+  <h1>Unit 7.6 &middot; L1 &mdash; Sex-Linked vs. Autosomal Inheritance</h1>
+  <p class="subtitle">Why colorblindness affects sons more than daughters</p>
+</header>
+<div class="card">
+  <canvas id="cvs"></canvas>
+  <div class="steps">
+    <div class="step" id="s0"><span class="step-num">STEP 1</span>Two types of traits</div>
+    <div class="step" id="s1"><span class="step-num">STEP 2</span>Gametes separate</div>
+    <div class="step" id="s2"><span class="step-num">STEP 3</span>Both squares fill</div>
+    <div class="step" id="s3"><span class="step-num">STEP 4</span>The pattern difference</div>
+  </div>
+  <div class="controls">
+    <button id="btn-play">Pause</button>
+    <button id="btn-restart" class="sec">Restart</button>
+  </div>
+</div>
+<script>
+const cv=document.getElementById('cvs'),ctx=cv.getContext('2d');
+const W=680,H=356;
+const _dpr=window.devicePixelRatio||1,_sc=Math.max(2,_dpr);
+cv.width=W*_sc;cv.height=H*_sc;ctx.scale(_sc,_sc);
+const cl01=x=>Math.max(0,Math.min(1,x));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const sm=t=>t*t*(3-2*t);
+const eo3=t=>1-Math.pow(1-t,3);
+const ph=(t,s,e)=>cl01((t-s)/(e-s));
+const rgb=([r,g,b])=>`rgb(${r},${g},${b})`;
+const rgba=([r,g,b],a)=>`rgba(${r},${g},${b},${a})`;
+
+const AC={XN:[68,145,222],Xc:[200,40,88],Y:[95,125,160],B:[58,175,120],b:[210,128,38]};
+const CELL_BG={normal:[16,26,48],carrier:[20,40,72],colorblind:[62,12,30],affected:[52,30,8]};
+const LBL=[172,204,232];
+
+// Shared cell geometry
+const GY=120,CW=68,CH=60;
+
+// LEFT grid (X-linked): GX=126
+const LGX=126;
+const L_COL=[{cx:LGX+CW/2,cy:86},{cx:LGX+3*CW/2,cy:86}];
+const L_ROW=[{cx:88,cy:GY+CH/2},{cx:88,cy:GY+3*CH/2}];
+const L_CELLS=[
+  {r:0,c:0,mom:'XN',dad:'XN',pheno:'Normal ♀',    type:'normal',    stagger:0},
+  {r:0,c:1,mom:'XN',dad:'Y', pheno:'Normal ♂',    type:'normal',    stagger:0.05, front:'mom'},
+  {r:1,c:0,mom:'Xc',dad:'XN',pheno:'Carrier ♀',   type:'carrier',   stagger:0.10, front:'dad'},
+  {r:1,c:1,mom:'Xc',dad:'Y', pheno:'Colorblind ♂',type:'colorblind',stagger:0.15, front:'mom'},
+];
+// Parent allele starts (left side)
+const LM_XN={x:46,y:152},LM_XC={x:46,y:172};
+const LD_XN={x:154,y:30}, LD_Y= {x:210,y:30};
+
+// RIGHT grid (Autosomal): GX=486
+const RGX=486;
+const R_COL=[{cx:RGX+CW/2,cy:86},{cx:RGX+3*CW/2,cy:86}];
+const R_ROW=[{cx:448,cy:GY+CH/2},{cx:448,cy:GY+3*CH/2}];
+const R_CELLS=[
+  {r:0,c:0,mom:'B',dad:'B',pheno:'Dominant', type:'normal',  stagger:0},
+  {r:0,c:1,mom:'B',dad:'b',pheno:'Carrier',  type:'carrier', stagger:0.05, front:'mom'},
+  {r:1,c:0,mom:'b',dad:'B',pheno:'Carrier',  type:'carrier', stagger:0.10, front:'dad'},
+  {r:1,c:1,mom:'b',dad:'b',pheno:'Recessive',type:'affected',stagger:0.15},
+];
+const RM_B={x:408,y:152},RM_b={x:408,y:172};
+const RD_B={x:514,y:30}, RD_b={x:570,y:30};
+
+const CYCLE=13000;
+
+function drawBg(){
+  const g=ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*.75);
+  g.addColorStop(0,rgba([18,8,14],1));g.addColorStop(1,rgba([10,4,8],1));
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+
+function pill(cx,cy,type,al,sc){
+  sc=sc||1;
+  const col=AC[type]||[120,120,120];
+  const isX=type==='XN'||type==='Xc';
+  const pw=(isX?34:26)*sc,ph=20*sc,r=ph/2;
+  ctx.save();ctx.globalAlpha=al;
+  const g=ctx.createLinearGradient(cx,cy-ph/2,cx,cy+ph/2);
+  g.addColorStop(0,rgba(col.map(v=>Math.min(255,(v*1.4+20)|0)),.96));
+  g.addColorStop(1,rgba(col,.90));
+  ctx.fillStyle=g;ctx.beginPath();ctx.roundRect(cx-pw/2,cy-ph/2,pw,ph,r);ctx.fill();
+  ctx.strokeStyle=rgba(col.map(v=>(v*.45)|0),.48);ctx.lineWidth=.7;ctx.stroke();
+  ctx.fillStyle='rgba(255,255,255,.95)';ctx.textBaseline='middle';ctx.textAlign='center';
+  if(type==='XN'){
+    ctx.font=`bold ${10*sc}px system-ui`;ctx.fillText('X',cx-3.5*sc,cy);
+    ctx.font=`bold ${7*sc}px system-ui`;ctx.fillText('N',cx+5*sc,cy-3*sc);
+  } else if(type==='Xc'){
+    ctx.font=`bold ${10*sc}px system-ui`;ctx.fillText('X',cx-3.5*sc,cy);
+    ctx.font=`bold ${7*sc}px system-ui`;ctx.fillText('c',cx+5*sc,cy-3*sc);
+  } else {
+    ctx.font=`bold ${10*sc}px system-ui`;ctx.fillText(type,cx,cy);
+  }
+  ctx.textBaseline='alphabetic';ctx.textAlign='left';ctx.restore();
+}
+
+function drawGrid(gx,cells,gridT){
+  if(gridT<=0)return;
+  ctx.save();ctx.globalAlpha=gridT;
+  cells.forEach(cell=>{
+    const x=gx+cell.c*CW,y=GY+cell.r*CH;
+    ctx.fillStyle=rgba(CELL_BG[cell.type],.88);
+    ctx.beginPath();ctx.roundRect(x+1,y+1,CW-2,CH-2,3);ctx.fill();
+  });
+  ctx.strokeStyle=rgba([55,78,118],.50);ctx.lineWidth=1.4;
+  ctx.beginPath();ctx.roundRect(gx,GY,CW*2,CH*2,5);ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(gx+CW,GY);ctx.lineTo(gx+CW,GY+CH*2);
+  ctx.moveTo(gx,GY+CH);ctx.lineTo(gx+CW*2,GY+CH);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawParentPair(xnPos,xcPos,type1,type2,al){
+  pill(xnPos.x,xnPos.y,type1,al,0.82);
+  pill(xcPos.x,xcPos.y,type2,al,0.82);
+}
+
+function drawHeaders(gx,rowHdrs,colHdrs,cells,mXnS,mXcS,dXnS,dYS,mt1,mt2,dt1,dt2,sepT,parentT){
+  const mxnX=lerp(mXnS.x,rowHdrs[0].cx,sepT),mxnY=lerp(mXnS.y,rowHdrs[0].cy,sepT);
+  const mxcX=lerp(mXcS.x,rowHdrs[1].cx,sepT),mxcY=lerp(mXcS.y,rowHdrs[1].cy,sepT);
+  const dxnX=lerp(dXnS.x,colHdrs[0].cx,sepT),dxnY=lerp(dXnS.y,colHdrs[0].cy,sepT);
+  const dyX= lerp(dYS.x, colHdrs[1].cx,sepT),dyY= lerp(dYS.y, colHdrs[1].cy,sepT);
+  const al=Math.max(parentT,sepT*.9);
+  pill(mxnX,mxnY,mt1,al,1.0);
+  pill(mxcX,mxcY,mt2,al,1.0);
+  pill(dxnX,dxnY,dt1,al,1.0);
+  pill(dyX,dyY,dt2,al,1.0);
+}
+
+function drawCellFill(gx,rowHdrs,colHdrs,cells,fillT){
+  cells.forEach(cell=>{
+    const fa=sm(cl01((fillT-cell.stagger)/.26));
+    if(fa<=0)return;
+    const cx=gx+cell.c*CW+CW/2,cy=GY+cell.r*CH+CH/2;
+    const mx=lerp(rowHdrs[cell.r].cx+16,cx-7,sm(fa));
+    const my=lerp(rowHdrs[cell.r].cy,cy,sm(fa));
+    const dx=lerp(colHdrs[cell.c].cx,cx+7,sm(fa));
+    const dy=lerp(colHdrs[cell.c].cy+16,cy,sm(fa));
+    const mF=cell.front==='mom',dF=cell.front==='dad';
+    const mSc=mF?.78:dF?.52:.70, mAl=mF?fa*.90:dF?fa*.44:fa*.88;
+    const dSc=dF?.78:mF?.52:.70, dAl=dF?fa*.90:mF?fa*.44:fa*.88;
+    if(mF){pill(dx,dy,cell.dad,dAl,dSc);pill(mx,my,cell.mom,mAl,mSc);}
+    else if(dF){pill(mx,my,cell.mom,mAl,mSc);pill(dx,dy,cell.dad,dAl,dSc);}
+    else{pill(mx,my,cell.mom,mAl,mSc);pill(dx,dy,cell.dad,dAl,dSc);}
+    if(fa>.60){
+      const la=cl01((fa-.60)/.28);
+      const isAffected=cell.type==='colorblind'||cell.type==='affected';
+      const col=cell.type==='colorblind'?AC.Xc:cell.type==='affected'?AC.b:LBL;
+      ctx.save();ctx.globalAlpha=la;
+      ctx.font=(isAffected?'bold ':'')+'9px system-ui';
+      ctx.fillStyle=rgba(col,isAffected?.58:.30);
+      ctx.textAlign='center';ctx.fillText(cell.pheno,cx,cy+20);
+      ctx.textAlign='left';ctx.restore();
+    }
+  });
+}
+
+function drawSideLabels(appear){
+  ctx.save();ctx.globalAlpha=appear;
+  // Side titles — sit above the dad pills at y=30, clear at y=10
+  ctx.textAlign='center';
+  ctx.font='bold 12px system-ui';ctx.fillStyle=rgba(AC.XN,.70);
+  ctx.fillText('X-LINKED TRAIT',LGX+CW,12);
+  ctx.font='bold 12px system-ui';ctx.fillStyle=rgba(AC.B,.70);
+  ctx.fillText('AUTOSOMAL TRAIT',RGX+CW,12);
+  // dad's / mom's orientation labels at header positions
+  ctx.font='10px system-ui';ctx.fillStyle=rgba(LBL,.30);
+  ctx.fillText("dad's gametes",(L_COL[0].cx+L_COL[1].cx)/2,63);
+  ctx.fillText("dad's gametes",(R_COL[0].cx+R_COL[1].cx)/2,63);
+  ctx.textAlign='right';
+  ctx.fillText("mom's gametes",L_ROW[0].cx-6,L_ROW[0].cy-16);
+  ctx.fillText("mom's gametes",R_ROW[0].cx-6,R_ROW[0].cy-16);
+  // Center divider
+  ctx.strokeStyle=rgba(LBL,.14);ctx.lineWidth=1;ctx.setLineDash([4,6]);
+  ctx.beginPath();ctx.moveTo(340,48);ctx.lineTo(340,300);ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.font='bold 14px system-ui';ctx.fillStyle=rgba(LBL,.28);
+  ctx.textAlign='center';ctx.fillText('vs.',340,185);
+  ctx.textAlign='left';ctx.restore();
+}
+
+function drawResults(resultT){
+  if(resultT<=0)return;
+  ctx.save();ctx.globalAlpha=resultT;
+
+  // Glow on colorblind cell (left grid)
+  const cbX=LGX+CW,cbY=GY+CH;
+  const lg=ctx.createRadialGradient(cbX+CW/2,cbY+CH/2,0,cbX+CW/2,cbY+CH/2,45);
+  lg.addColorStop(0,rgba(AC.Xc,.40));lg.addColorStop(1,rgba(AC.Xc,0));
+  ctx.fillStyle=lg;ctx.beginPath();ctx.ellipse(cbX+CW/2,cbY+CH/2,45,36,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=rgba(AC.Xc,.65);ctx.lineWidth=2;
+  ctx.beginPath();ctx.roundRect(cbX+1,cbY+1,CW-2,CH-2,3);ctx.stroke();
+
+  // Glow on affected cell (right grid)
+  const abX=RGX+CW,abY=GY+CH;
+  const rg=ctx.createRadialGradient(abX+CW/2,abY+CH/2,0,abX+CW/2,abY+CH/2,45);
+  rg.addColorStop(0,rgba(AC.b,.38));rg.addColorStop(1,rgba(AC.b,0));
+  ctx.fillStyle=rg;ctx.beginPath();ctx.ellipse(abX+CW/2,abY+CH/2,45,36,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=rgba(AC.b,.60);ctx.lineWidth=2;
+  ctx.beginPath();ctx.roundRect(abX+1,abY+1,CW-2,CH-2,3);ctx.stroke();
+
+  // Sex symbols on X-linked grid cells (col 0 = ♀, col 1 = ♂)
+  const sexAl=cl01((resultT-.3)/.35);
+  if(sexAl>.02){
+    ctx.globalAlpha=sexAl;
+    ctx.font='12px system-ui';ctx.textAlign='center';
+    [[0,0,'♀',AC.XN],[0,1,'♂',AC.XN],[1,0,'♀',AC.XN],[1,1,'♂',AC.Xc]].forEach(([r,c,sym,col])=>{
+      ctx.fillStyle=rgba(col,c===1&&r===1?.80:.35);
+      ctx.fillText(sym,LGX+c*CW+CW/2,GY+r*CH+12);
+    });
+    // Both symbols on affected autosomal cell
+    ctx.fillStyle=rgba(AC.b,.72);ctx.fillText('♂♀',RGX+CW+CW/2,GY+CH+12);
+    ctx.fillStyle=rgba(LBL,.28);
+    [[0,0],[0,1],[1,0]].forEach(([r,c])=>ctx.fillText('♂♀',RGX+c*CW+CW/2,GY+r*CH+12));
+    ctx.textAlign='left';
+  }
+
+  // Callout boxes below each grid
+  const by=GY+CH*2+10;
+  const bw=CW*2+104; // 240px — wide enough for all text
+  // Left callout
+  ctx.globalAlpha=resultT;
+  ctx.fillStyle=rgba([62,12,30],.65);ctx.beginPath();ctx.roundRect(LGX-52,by,bw,96,5);ctx.fill();
+  ctx.strokeStyle=rgba(AC.Xc,.45);ctx.lineWidth=.8;ctx.stroke();
+  ctx.font=’bold 11px system-ui’;ctx.fillStyle=rgba(AC.Xc,.90);
+  ctx.textAlign=’center’;ctx.fillText(‘Sons have just 1 X chromosome.’,LGX+CW,by+17);
+  ctx.font=’10px system-ui’;ctx.fillStyle=rgba(LBL,.55);
+  ctx.fillText(‘Inherit Xᶜ from mom? No backup allele.’,LGX+CW,by+34);
+  ctx.fillText(‘No second copy to override it.’,LGX+CW,by+51);
+  ctx.fillText(‘→ 50% of sons are colorblind.’,LGX+CW,by+68);
+
+  // Right callout
+  ctx.fillStyle=rgba([52,30,8],.65);ctx.beginPath();ctx.roundRect(RGX-52,by,bw,96,5);ctx.fill();
+  ctx.strokeStyle=rgba(AC.b,.45);ctx.lineWidth=.8;ctx.stroke();
+  ctx.font=’bold 11px system-ui’;ctx.fillStyle=rgba(AC.b,.90);
+  ctx.fillText(‘Every child gets 2 copies.’,RGX+CW,by+17);
+  ctx.font=’10px system-ui’;ctx.fillStyle=rgba(LBL,.55);
+  ctx.fillText(‘Need bb to show the trait.’,RGX+CW,by+34);
+  ctx.fillText(‘Both sexes equally at risk.’,RGX+CW,by+51);
+  ctx.fillText(‘→ 25% of all children’,RGX+CW,by+68);
+  ctx.fillText(‘show the recessive trait.’,RGX+CW,by+82);
+
+  ctx.textAlign='left';ctx.restore();
+}
+
+function activeStep(t){
+  if(t<.08)return -1;
+  if(t<.26)return 0;
+  if(t<.48)return 1;
+  if(t<.72)return 2;
+  if(t<.95)return 3;
+  return -1;
+}
+
+function draw(t){
+  drawBg();
+  const appear =sm(ph(t,.01,.10));
+  const parentT=sm(ph(t,.08,.24));
+  const sepT   =eo3(ph(t,.26,.48));
+  const gridT  =sm(ph(t,.24,.38));
+  const fillT  =ph(t,.48,.72);
+  const resultT=sm(ph(t,.72,.90));
+
+  ctx.save();ctx.globalAlpha=appear;
+  drawSideLabels(1);
+  drawGrid(LGX,L_CELLS,gridT);
+  drawGrid(RGX,R_CELLS,gridT);
+  ctx.restore();
+
+  // Headers + parent alleles
+  ctx.save();ctx.globalAlpha=appear;
+  const pFade=fillT>0?cl01(1-fillT*4):1;
+  if(sepT<.02&&pFade>.02){
+    drawParentPair(LM_XN,LM_XC,'XN','Xc',parentT*pFade);
+    drawParentPair(LD_XN,LD_Y,'XN','Y',parentT*pFade);
+    drawParentPair(RM_B,RM_b,'B','b',parentT*pFade);
+    drawParentPair(RD_B,RD_b,'B','b',parentT*pFade);
+  }
+  drawHeaders(LGX,L_ROW,L_COL,L_CELLS,LM_XN,LM_XC,LD_XN,LD_Y,'XN','Xc','XN','Y',sepT,parentT);
+  drawHeaders(RGX,R_ROW,R_COL,R_CELLS,RM_B,RM_b,RD_B,RD_b,'B','b','B','b',sepT,parentT);
+  ctx.restore();
+
+  // Cell fill — both squares simultaneously
+  if(fillT>0){
+    ctx.save();ctx.globalAlpha=appear;
+    drawHeaders(LGX,L_ROW,L_COL,L_CELLS,LM_XN,LM_XC,LD_XN,LD_Y,'XN','Xc','XN','Y',1,1);
+    drawHeaders(RGX,R_ROW,R_COL,R_CELLS,RM_B,RM_b,RD_B,RD_b,'B','b','B','b',1,1);
+    drawCellFill(LGX,L_ROW,L_COL,L_CELLS,fillT);
+    drawCellFill(RGX,R_ROW,R_COL,R_CELLS,fillT);
+    ctx.restore();
+  }
+
+  drawResults(resultT);
+
+  ['s0','s1','s2','s3'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',i===activeStep(t)));
+}
+
+let t=0,running=true,lastTs=null;
+function loop(ts){
+  if(!running)return;
+  if(lastTs!==null)t=(t+(ts-lastTs)/CYCLE)%1;
+  lastTs=ts;draw(t);requestAnimationFrame(loop);
+}
+const btnPlay=document.getElementById('btn-play');
+document.getElementById('btn-restart').addEventListener('click',()=>{t=0;lastTs=null;if(!running){running=true;btnPlay.textContent='Pause';requestAnimationFrame(loop);}});
+function togglePlay(){running=!running;btnPlay.textContent=running?'Pause':'Play';if(running){lastTs=null;requestAnimationFrame(loop);}}
+btnPlay.addEventListener('click',togglePlay);
+document.getElementById('cvs').addEventListener('click',togglePlay);
+const STEP_T=[0.22,0.46,0.70,0.88];
+['s0','s1','s2','s3'].forEach((id,i)=>{
+  document.getElementById(id).addEventListener('click',e=>{
+    e.stopPropagation();
+    t=STEP_T[i];lastTs=null;
+    if(running){running=false;btnPlay.textContent='Play';}
+    draw(t);
+  });
+});
+running=false;btnPlay.textContent='Play';draw(0);
+</script>

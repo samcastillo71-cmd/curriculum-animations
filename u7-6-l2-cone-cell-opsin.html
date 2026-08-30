@@ -1,0 +1,595 @@
+<title>Opsin Signal</title>
+<style>
+  :root {
+    --bg:#E8EDF5;--card:#FFFFFF;--text:#0D1B2A;--muted:#6B7C99;
+    --accent:#3A9ED3;--step-bg:#D5DCE9;--step-active:#3A9ED3;
+    --step-act-text:#FFFFFF;--btn-sec:#D5DCE9;--btn-sec-text:#4A5C78;
+  }
+  @media(prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --bg:#060D1A;--card:#0D1830;--text:#DCE4F0;--muted:#7A8BA8;
+      --accent:#4FACDE;--step-bg:#111F35;--step-active:#4FACDE;
+      --step-act-text:#060D1A;--btn-sec:#111F35;--btn-sec-text:#7A8BA8;
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#060D1A;--card:#0D1830;--text:#DCE4F0;--muted:#7A8BA8;
+    --accent:#4FACDE;--step-bg:#111F35;--step-active:#4FACDE;
+    --step-act-text:#060D1A;--btn-sec:#111F35;--btn-sec-text:#7A8BA8;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:.75rem 1rem 1.5rem}
+  header{text-align:center;margin-bottom:1.25rem}
+  h1{font-size:1.35rem;font-weight:700;letter-spacing:-.015em;margin-bottom:.3rem}
+  .subtitle{font-size:.82rem;color:var(--muted)}
+  .card{background:var(--card);border-radius:16px;padding:1.125rem 1.125rem 1rem;
+    box-shadow:0 2px 20px rgba(0,0,0,.10),0 1px 4px rgba(0,0,0,.06);
+    max-width:1080px;width:100%;display:flex;flex-direction:column;gap:.875rem}
+  canvas{border-radius:10px;display:block;width:100%;height:auto;cursor:pointer}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem}
+  @media(max-width:500px){.steps{grid-template-columns:repeat(2,1fr)}}
+  .step{padding:.45rem .5rem;border-radius:7px;font-size:.88rem;font-weight:500;
+    text-align:center;background:var(--step-bg);color:var(--muted);
+    transition:background .35s,color .35s;line-height:1.35;cursor:pointer;user-select:none}
+  .step.active{background:var(--step-active);color:var(--step-act-text);font-weight:600}
+  .step-num{display:block;font-size:.72rem;font-weight:600;opacity:.6;margin-bottom:.15rem;letter-spacing:.04em}
+  .controls{display:flex;gap:.5rem;justify-content:center}
+  button{background:var(--accent);color:#fff;border:none;border-radius:7px;
+    padding:.45rem 1.4rem;font-size:.82rem;font-weight:600;cursor:pointer;
+    letter-spacing:.01em;transition:opacity .15s}
+  button:hover{opacity:.82}
+  button.sec{background:var(--btn-sec);color:var(--btn-sec-text)}
+</style>
+
+<header>
+  <h1>Unit 7.6 · L2 &mdash; How Cone Cells Detect Light</h1>
+  <p class="subtitle">Inside the retina &mdash; click to pause</p>
+</header>
+<div class="card">
+  <canvas id="cvs"></canvas>
+  <div class="steps">
+    <div class="step" id="s0"><span class="step-num">STEP 1</span>Light enters the eye</div>
+    <div class="step" id="s1"><span class="step-num">STEP 2</span>Photon absorbed by opsin</div>
+    <div class="step" id="s2"><span class="step-num">STEP 3</span>Opsin changes shape &rarr; cascade</div>
+    <div class="step" id="s3"><span class="step-num">STEP 4</span>Signal sent to brain</div>
+  </div>
+  <div class="controls">
+    <button id="btn-play">Pause</button>
+    <button id="btn-restart" class="sec">Restart</button>
+  </div>
+</div>
+
+<script>
+const cv=document.getElementById('cvs');
+const ctx=cv.getContext('2d');
+const W=680,H=356;
+const _dpr=window.devicePixelRatio||1,_sc=Math.max(2,_dpr);
+cv.width=W*_sc;cv.height=H*_sc;ctx.scale(_sc,_sc);
+
+const cl01=x=>Math.max(0,Math.min(1,x));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const sm=t=>t*t*(3-2*t);
+const eo3=t=>1-Math.pow(1-t,3);
+const ph=(t,s,e)=>cl01((t-s)/(e-s));
+const lRGB=(a,b,t)=>a.map((v,i)=>Math.round(lerp(v,b[i],t)));
+const rgb=([r,g,b])=>`rgb(${r},${g},${b})`;
+const rgba=([r,g,b],a)=>`rgba(${r},${g},${b},${a})`;
+
+const C={
+  bg:[8,16,32],bgG:[13,26,48],
+  disc:[70,105,152],activ:[42,200,165],
+  is:[108,84,58],cb:[72,102,148],nuc:[44,68,112],
+  ax:[118,128,142],syn:[168,78,83],
+  photon:[250,215,80],sig:[228,88,66],lbl:[168,198,228],
+};
+
+// cone cell geometry
+const CX=205,CX_L=113,CX_R=297;
+const D_RX=70,D_RY=9.5,D_H=12,D_GAP=5,D_UNIT=D_H+D_GAP;
+const OS_TOP=30,N_DISCS=7;
+const OS_BOT=OS_TOP+N_DISCS*D_UNIT;
+const FEAT=3;
+const FEAT_CY=OS_TOP+FEAT*D_UNIT+D_H/2;
+const IS_TOP=OS_BOT+5,IS_BOT=IS_TOP+48,IS_RX=44;
+const CB_CY=IS_BOT+24,CB_R=21;
+const AX_TOP=CB_CY+CB_R,AX_BOT=AX_TOP+56,AX_W=5;
+const ST_CY=AX_BOT+11,ST_R=10;
+
+// eye inset
+const EX=472,EY=14,EW=196,EH=96;
+const ECX=564,ECY=62,ER=36;
+const PUP_X=542,LENS_X=557,FOV_X=591,FOV_Y=62;
+
+// myelinated nerve: from cone synapse right edge curving to brain
+const AX_SX=220,AX_SY=314,AX_CX=440,AX_CY=280,AX_EX=616,AX_EY=262;
+const N_SHEATHS=11;
+
+function bPt(t,x0,y0,x1,y1,x2,y2){
+  const u=1-t;
+  return[u*u*x0+2*u*t*x1+t*t*x2,u*u*y0+2*u*t*y1+t*t*y2];
+}
+function bTan(t,x0,y0,x1,y1,x2,y2){
+  return[2*(1-t)*(x1-x0)+2*t*(x2-x1),2*(1-t)*(y1-y0)+2*t*(y2-y1)];
+}
+
+// precompute sheath positions along axon bezier
+const sheaths=[];
+for(let i=0;i<N_SHEATHS;i++){
+  const tc=(i+.5)/N_SHEATHS;
+  const[px,py]=bPt(tc,AX_SX,AX_SY,AX_CX,AX_CY,AX_EX,AX_EY);
+  const[dx,dy]=bTan(tc,AX_SX,AX_SY,AX_CX,AX_CY,AX_EX,AX_EY);
+  sheaths.push({px,py,angle:Math.atan2(dy,dx)});
+}
+
+// ── draw one membrane disc ────────────────────────────────────────
+function drawDisc(cx,cy,rx,ry,dh,col,act,doGlow){
+  const dk=col.map(v=>Math.round(v*.50));
+  const br=col.map(v=>Math.min(255,Math.round(v*1.28)));
+  ctx.beginPath();ctx.ellipse(cx,cy+dh/2,rx,ry,0,0,Math.PI*2);
+  ctx.fillStyle=rgba(dk,.86);ctx.fill();
+  const sg=ctx.createLinearGradient(cx-rx,cy,cx+rx,cy);
+  sg.addColorStop(0,rgba(dk,.92));sg.addColorStop(.13,rgba(col,.96));
+  sg.addColorStop(.78,rgba(col,.96));sg.addColorStop(1,rgba(dk,.92));
+  ctx.save();ctx.beginPath();
+  ctx.moveTo(cx-rx,cy-dh/2);ctx.lineTo(cx-rx,cy+dh/2);
+  ctx.ellipse(cx,cy+dh/2,rx,ry,0,Math.PI,0,true);
+  ctx.lineTo(cx+rx,cy-dh/2);
+  ctx.ellipse(cx,cy-dh/2,rx,ry,0,0,Math.PI,true);
+  ctx.closePath();ctx.fillStyle=sg;ctx.fill();ctx.restore();
+  ctx.beginPath();ctx.ellipse(cx,cy-dh/2,rx,ry,0,0,Math.PI*2);
+  ctx.fillStyle=rgba(br,.93);ctx.fill();
+  const hg=ctx.createRadialGradient(cx-rx*.26,cy-dh/2,0,cx-rx*.26,cy-dh/2,rx*.44);
+  hg.addColorStop(0,rgba([255,255,255],.28+act*.18));hg.addColorStop(1,rgba([255,255,255],0));
+  ctx.fillStyle=hg;ctx.beginPath();ctx.ellipse(cx,cy-dh/2,rx,ry,0,0,Math.PI*2);ctx.fill();
+  if(doGlow&&act>.08){
+    ctx.save();ctx.globalAlpha=act*.52;
+    const gg=ctx.createRadialGradient(cx,cy,0,cx,cy,rx+28);
+    gg.addColorStop(0,rgba(C.activ,.48));gg.addColorStop(1,rgba(C.activ,0));
+    ctx.fillStyle=gg;ctx.beginPath();ctx.ellipse(cx,cy,rx+28,ry+12+act*12,0,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+}
+
+// ── draw cone cell ────────────────────────────────────────────────
+function drawCone(cx,scale,mainAct,flankerAct,isMain,cascadeT,synAct){
+  const rx=D_RX*scale,ry=D_RY*scale,dh=D_H*scale,du=D_UNIT*scale;
+  const isRx=IS_RX*scale;
+  const os_bot=OS_TOP+N_DISCS*du;
+  const is_top=os_bot+5*scale,is_bot=is_top+48*scale;
+
+  // discs — cascade directional downward from FEAT toward synapse
+  for(let i=0;i<N_DISCS;i++){
+    const cy=OS_TOP+i*du+dh/2;
+    const isFeat=isMain&&i===FEAT;
+    let act=isFeat?mainAct:(isMain?mainAct*.22:flankerAct*.65);
+    if(isMain&&cascadeT>0){
+      if(i<FEAT){
+        // brief flash above activation site, quickly fades
+        const distUp=FEAT-i;
+        const upFlash=sm(ph(cascadeT,0,.09))*(1-sm(ph(cascadeT,.09,.26)))*(1-distUp*.30);
+        act=Math.max(act,upFlash*.28);
+      } else {
+        const dist=i-FEAT;
+        const rs=dist*.13;
+        const rAct=sm(ph(cascadeT,rs,rs+.28))*(1-sm(ph(cascadeT,rs+.28,rs+.56)));
+        act=Math.max(act,rAct*(1-dist*.09));
+      }
+    }
+    // FEAT disc: brief distinct halo at cascade onset, fades before wave reaches next disc
+    if(isFeat&&cascadeT>0){
+      const featGlow=sm(ph(cascadeT,0,.12))*(1-sm(ph(cascadeT,.12,.32)));
+      if(featGlow>.02){
+        ctx.save();ctx.globalAlpha=featGlow*.70;
+        const fg=ctx.createRadialGradient(cx,cy,rx*.5,cx,cy,rx+26);
+        fg.addColorStop(0,rgba(C.activ,.72));fg.addColorStop(1,rgba(C.activ,0));
+        ctx.fillStyle=fg;ctx.beginPath();ctx.ellipse(cx,cy,rx+26,ry+12,0,0,Math.PI*2);ctx.fill();
+        ctx.restore();
+      }
+    }
+    drawDisc(cx,cy,rx,ry,dh,lRGB(C.disc,C.activ,act),act,isFeat);
+  }
+
+  // inner segment
+  const sg=ctx.createLinearGradient(cx-rx,is_top,cx+rx,is_top);
+  const isCol=C.is;
+  sg.addColorStop(0,rgba(isCol.map(v=>Math.round(v*.55)),.88));
+  sg.addColorStop(.2,rgba(isCol,.93));sg.addColorStop(.8,rgba(isCol,.93));
+  sg.addColorStop(1,rgba(isCol.map(v=>Math.round(v*.55)),.88));
+  ctx.save();ctx.beginPath();
+  ctx.moveTo(cx-rx,is_top);ctx.lineTo(cx-isRx,is_bot);
+  ctx.ellipse(cx,is_bot,isRx,ry*(isRx/rx),0,Math.PI,0,true);
+  ctx.lineTo(cx+rx,is_top);ctx.ellipse(cx,is_top,rx,ry,0,0,Math.PI,true);
+  ctx.closePath();ctx.fillStyle=sg;ctx.fill();ctx.restore();
+  ctx.beginPath();ctx.ellipse(cx,is_bot,isRx,ry*(isRx/rx),0,0,Math.PI*2);
+  ctx.fillStyle=rgba(isCol.map(v=>Math.round(v*.6)),.9);ctx.fill();
+
+  // inner segment cascade glow
+  if(isMain&&cascadeT>.40){
+    const isGlow=sm(ph(cascadeT,.40,.72))*(1-sm(ph(cascadeT,.72,.96)));
+    ctx.save();ctx.globalAlpha=isGlow*.58;
+    const igg=ctx.createRadialGradient(cx,(is_top+is_bot)/2,0,cx,(is_top+is_bot)/2,rx+20);
+    igg.addColorStop(0,rgba(C.activ,.5));igg.addColorStop(1,rgba(C.activ,0));
+    ctx.fillStyle=igg;ctx.beginPath();
+    ctx.ellipse(cx,(is_top+is_bot)/2,rx+10,(is_bot-is_top)/2+10,0,0,Math.PI*2);
+    ctx.fill();ctx.restore();
+  }
+
+  if(!isMain)return;
+
+  // cell body
+  const cb_cy=is_bot+24,cb_r=CB_R;
+  ctx.fillStyle=rgba(C.cb,.7);
+  ctx.fillRect(cx-isRx*.44,is_bot,isRx*.88,cb_cy-cb_r-is_bot);
+  const bg=ctx.createRadialGradient(cx-cb_r*.3,cb_cy-cb_r*.3,0,cx,cb_cy,cb_r);
+  bg.addColorStop(0,rgba(C.cb.map(v=>Math.min(255,Math.round(v*1.4))),.95));
+  bg.addColorStop(.6,rgba(C.cb,.95));bg.addColorStop(1,rgba(C.cb.map(v=>Math.round(v*.6)),.95));
+  ctx.beginPath();ctx.arc(cx,cb_cy,cb_r,0,Math.PI*2);ctx.fillStyle=bg;ctx.fill();
+  const ng=ctx.createRadialGradient(cx-4,cb_cy-4,0,cx,cb_cy,12);
+  ng.addColorStop(0,rgba(C.nuc.map(v=>Math.min(255,Math.round(v*1.3))),.9));
+  ng.addColorStop(1,rgba(C.nuc,.9));
+  ctx.beginPath();ctx.arc(cx,cb_cy,12,0,Math.PI*2);ctx.fillStyle=ng;ctx.fill();
+
+  // axon
+  const ax_top=cb_cy+cb_r,ax_bot=ax_top+56;
+  const ag=ctx.createLinearGradient(cx-AX_W,ax_top,cx+AX_W,ax_top);
+  ag.addColorStop(0,rgba(C.ax.map(v=>Math.round(v*.6)),.85));
+  ag.addColorStop(.5,rgba(C.ax,.9));ag.addColorStop(1,rgba(C.ax.map(v=>Math.round(v*.6)),.85));
+  ctx.fillStyle=ag;ctx.fillRect(cx-AX_W,ax_top,AX_W*2,ax_bot-ax_top);
+
+  // signal traveling through cell body → axon
+  if(isMain&&cascadeT>.72){
+    // cell body glow as signal passes through
+    const cbGlow=sm(ph(cascadeT,.72,.86))*(1-sm(ph(cascadeT,.86,.98)));
+    if(cbGlow>.02){
+      ctx.save();ctx.globalAlpha=cbGlow*.52;
+      const cbg=ctx.createRadialGradient(cx,cb_cy,0,cx,cb_cy,cb_r+18);
+      cbg.addColorStop(0,rgba(C.activ,.65));cbg.addColorStop(1,rgba(C.activ,0));
+      ctx.fillStyle=cbg;ctx.beginPath();ctx.arc(cx,cb_cy,cb_r+18,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    }
+    // pulse dot traveling down the axon
+    const axPulse=sm(ph(cascadeT,.80,.98));
+    if(axPulse>.01&&axPulse<.99){
+      const pulseY=lerp(ax_top,ax_bot,axPulse);
+      ctx.save();
+      const pg=ctx.createRadialGradient(cx,pulseY,0,cx,pulseY,11);
+      pg.addColorStop(0,rgba(C.activ,.70));pg.addColorStop(1,rgba(C.activ,0));
+      ctx.fillStyle=pg;ctx.beginPath();ctx.arc(cx,pulseY,11,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=rgba(C.sig,.88);ctx.beginPath();ctx.arc(cx,pulseY,3.5,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  // synapse — dark when idle, glows when cascade completes and signal fires
+  const st_cy=ax_bot+11;
+  const sa=synAct||0;
+  const synCol=lRGB(C.bg,C.syn,sa);
+  const synBorder=rgba(lRGB([40,40,55],C.syn,sa),.70+sa*.25);
+  const sg2=ctx.createRadialGradient(cx-ST_R*.3,st_cy-ST_R*.3,0,cx,st_cy,ST_R);
+  sg2.addColorStop(0,rgba(synCol.map(v=>Math.min(255,Math.round(v*1.35))),.55+sa*.40));
+  sg2.addColorStop(.6,rgba(synCol,.45+sa*.50));
+  sg2.addColorStop(1,rgba(synCol.map(v=>Math.round(v*.6)),.35+sa*.55));
+  ctx.beginPath();ctx.arc(cx,st_cy,ST_R,0,Math.PI*2);
+  ctx.fillStyle=sg2;ctx.fill();
+  ctx.strokeStyle=synBorder;ctx.lineWidth=1.2;ctx.stroke();
+  if(sa>.15){
+    ctx.save();ctx.globalAlpha=sa*.45;
+    const syg=ctx.createRadialGradient(cx,st_cy,0,cx,st_cy,ST_R+14);
+    syg.addColorStop(0,rgba(C.syn,.6));syg.addColorStop(1,rgba(C.syn,0));
+    ctx.fillStyle=syg;ctx.beginPath();ctx.arc(cx,st_cy,ST_R+14,0,Math.PI*2);ctx.fill();
+    ctx.restore();
+  }
+
+  // cell part labels — moderate opacity so they read without overpowering
+  ctx.font='9px system-ui';ctx.fillStyle=rgba(C.lbl,.48);
+  ctx.fillText('OUTER SEGMENT',cx+D_RX+78,OS_TOP+18);
+  ctx.fillText('(membrane discs)',cx+D_RX+78,OS_TOP+30);
+  ctx.fillText('INNER SEGMENT',cx+isRx+8,(is_top+is_bot)/2+4);
+  ctx.fillText('AXON',cx+AX_W+6,ax_top+28);
+  // SYNAPSE label left of ball (right side will have dendrites in Step 4)
+  ctx.fillText('SYNAPSE',cx-ST_R-64,st_cy+4);
+}
+
+// ── opsin activated label ─────────────────────────────────────────
+function drawOSLabel(mainAct){
+  if(mainAct<.22)return;
+  // cap max alpha so label doesn't wash into background shapes
+  const alpha=cl01((mainAct-.22)/.28)*.52;
+  ctx.save();ctx.globalAlpha=alpha;
+  ctx.strokeStyle=rgba(C.activ,.65);ctx.lineWidth=1.3;
+  ctx.beginPath();ctx.moveTo(CX+D_RX+2,FEAT_CY);ctx.lineTo(CX+D_RX+74,FEAT_CY);ctx.stroke();
+  const lx=CX+D_RX+76,ly=FEAT_CY-9,lw=104,lh=16;
+  ctx.fillStyle=rgba(C.activ,.16);
+  ctx.beginPath();if(ctx.roundRect)ctx.roundRect(lx,ly,lw,lh,3);else ctx.rect(lx,ly,lw,lh);
+  ctx.fill();
+  ctx.strokeStyle=rgba(C.activ,.38);ctx.lineWidth=.8;ctx.stroke();
+  ctx.font='bold 10px system-ui';ctx.fillStyle=rgba(C.activ,.88);
+  ctx.fillText('opsin activated',lx+6,ly+11);
+  ctx.restore();
+}
+
+// ── eye inset ─────────────────────────────────────────────────────
+function drawEyeInset(t){
+  const appear=sm(ph(t,.02,.14));
+  ctx.globalAlpha=.28+appear*.65;
+
+  ctx.save();ctx.beginPath();ctx.roundRect(EX,EY,EW,EH,6);
+  ctx.fillStyle=rgba([10,20,40],.7);ctx.fill();
+  ctx.strokeStyle=rgba([80,120,170],.38);ctx.lineWidth=1;ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.beginPath();ctx.roundRect(EX+1,EY+1,EW-2,EH-2,5);ctx.clip();
+
+  ctx.beginPath();ctx.arc(ECX,ECY,ER,0,Math.PI*2);
+  ctx.fillStyle=rgba([180,198,218],.10);ctx.fill();
+  ctx.strokeStyle=rgba([100,140,185],.6);ctx.lineWidth=2;ctx.stroke();
+  ctx.beginPath();ctx.arc(ECX-ER+9,ECY,15,-Math.PI*.52,Math.PI*.52);
+  ctx.strokeStyle=rgba([100,140,185],.6);ctx.lineWidth=2;ctx.stroke();
+  ctx.beginPath();ctx.arc(ECX,ECY,ER-2,0,Math.PI*2);
+  ctx.fillStyle=rgba([130,160,200],.05);ctx.fill();
+
+  const irisR=13;
+  const irisG=ctx.createRadialGradient(PUP_X-3,ECY-3,0,PUP_X,ECY,irisR);
+  irisG.addColorStop(0,rgba([55,80,130],.93));
+  irisG.addColorStop(.6,rgba([40,65,110],.9));
+  irisG.addColorStop(1,rgba([28,48,90],.88));
+  ctx.beginPath();ctx.arc(PUP_X,ECY,irisR,0,Math.PI*2);ctx.fillStyle=irisG;ctx.fill();
+  ctx.strokeStyle=rgba([70,100,155],.28);ctx.lineWidth=.65;
+  for(let a=0;a<Math.PI*2;a+=Math.PI/5){
+    ctx.beginPath();ctx.moveTo(PUP_X+5*Math.cos(a),ECY+5*Math.sin(a));
+    ctx.lineTo(PUP_X+irisR*Math.cos(a),ECY+irisR*Math.sin(a));ctx.stroke();
+  }
+  ctx.beginPath();ctx.arc(PUP_X,ECY,6,0,Math.PI*2);ctx.fillStyle=rgba([6,12,24],.97);ctx.fill();
+  ctx.beginPath();ctx.arc(PUP_X-3,ECY-3,2.8,0,Math.PI*2);ctx.fillStyle=rgba([200,220,240],.28);ctx.fill();
+  ctx.beginPath();ctx.ellipse(LENS_X,ECY,8,17,0,0,Math.PI*2);
+  ctx.fillStyle=rgba([155,192,228],.16);ctx.fill();
+  ctx.strokeStyle=rgba([120,165,210],.42);ctx.lineWidth=1;ctx.stroke();
+  ctx.beginPath();ctx.arc(ECX-8,ECY,ER-5,-1.0,1.0);
+  ctx.strokeStyle=rgba([88,132,178],.48);ctx.lineWidth=2.5;ctx.stroke();
+
+  const odx=ECX+ER*.72,ody=ECY+7;
+  ctx.beginPath();ctx.arc(odx,ody,4.5,0,Math.PI*2);ctx.fillStyle=rgba([82,122,162],.5);ctx.fill();
+  ctx.beginPath();ctx.moveTo(odx+4,ody);ctx.lineTo(EX+EW-2,ody);
+  ctx.strokeStyle=rgba([72,112,152],.45);ctx.lineWidth=3;ctx.stroke();
+
+  const actGlow=sm(ph(t,.37,.60));
+  const fovCol=lRGB([80,120,160],C.activ,actGlow*.85);
+  ctx.beginPath();ctx.arc(FOV_X,FOV_Y,6,0,Math.PI*2);ctx.fillStyle=rgba(fovCol,.78+actGlow*.2);ctx.fill();
+  ctx.beginPath();ctx.arc(FOV_X,FOV_Y,10,0,Math.PI*2);
+  ctx.strokeStyle=rgba(C.activ,.22+actGlow*.5);ctx.lineWidth=1;ctx.setLineDash([2.5,2.5]);ctx.stroke();ctx.setLineDash([]);
+
+  const lightT=sm(ph(t,.05,.32));
+  if(lightT>.02){
+    const rays=[-5,0,5],seg1=cl01(lightT/.45),seg2=cl01((lightT-.45)/.55);
+    ctx.strokeStyle=rgba(C.photon,.52);ctx.lineWidth=1.2;ctx.lineCap='round';
+    rays.forEach(dy=>{
+      const ry=ECY+dy;
+      ctx.beginPath();ctx.moveTo(EX+3,ry);ctx.lineTo(EX+3+(PUP_X-8-EX-3)*Math.min(1,seg1),ry);ctx.stroke();
+      if(lightT>.45&&seg2>0){
+        ctx.beginPath();ctx.moveTo(PUP_X+6,ry);
+        ctx.lineTo(PUP_X+6+(FOV_X-PUP_X-6)*seg2,ry+(FOV_Y-ry)*seg2);ctx.stroke();
+      }
+    });
+  }
+  ctx.restore();
+
+  // eye static labels
+  ctx.font='7.5px system-ui';ctx.fillStyle=rgba(C.lbl,.40);
+  ctx.fillText('EYE (cross-section)',EX+5,EY+10);
+  ctx.fillText('retina',FOV_X+8,FOV_Y+3);
+  ctx.fillText('LIGHT →',EX+5,ECY-5);
+  ctx.globalAlpha=1;
+
+  // zoom connector dashed line: fovea -> top of cone
+  const connA=.13+actGlow*.22;
+  ctx.save();ctx.strokeStyle=rgba(C.activ,connA);ctx.lineWidth=1;ctx.setLineDash([3,5]);
+  ctx.beginPath();ctx.moveTo(FOV_X,FOV_Y+11);
+  ctx.bezierCurveTo(FOV_X-60,FOV_Y+60,CX+40,OS_TOP-28,CX,OS_TOP-8);ctx.stroke();
+  ctx.setLineDash([]);ctx.restore();
+
+  // "zoomed out" label BELOW the eye inset box
+  const zAlpha=.32+appear*.50;
+  ctx.save();ctx.globalAlpha=zAlpha;
+  const zlx=ECX-38,zly=EY+EH+5,zlw=76,zlh=14;
+  ctx.fillStyle=rgba(C.activ,.14);
+  ctx.beginPath();if(ctx.roundRect)ctx.roundRect(zlx,zly,zlw,zlh,2);else ctx.rect(zlx,zly,zlw,zlh);
+  ctx.fill();
+  ctx.strokeStyle=rgba(C.activ,.30);ctx.lineWidth=.8;ctx.stroke();
+  ctx.font='bold 8px system-ui';ctx.fillStyle=rgba(C.activ,.85);
+  ctx.fillText('zoomed out',zlx+9,zly+10);
+  ctx.restore();
+}
+
+// ── photon ────────────────────────────────────────────────────────
+function drawPhoton(t){
+  const down=eo3(ph(t,.08,.38));
+  const absorb=ph(t,.37,.47);
+  if(absorb>=1)return;
+  const px=lerp(CX+14,CX,down),py=lerp(-25,FEAT_CY-D_H/2,down);
+  const al=1-absorb;
+  ctx.globalAlpha=al;
+  for(let i=5;i>=1;i--){
+    const s=cl01(down-i*.055);
+    const tx=lerp(CX+14,CX,eo3(s)),ty=lerp(-25,FEAT_CY-D_H/2,eo3(s));
+    const tg=ctx.createRadialGradient(tx,ty,0,tx,ty,lerp(10,3,i/5));
+    tg.addColorStop(0,rgba(C.photon,(1-i/6)*.33));tg.addColorStop(1,rgba(C.photon,0));
+    ctx.fillStyle=tg;ctx.beginPath();ctx.arc(tx,ty,lerp(10,3,i/5),0,Math.PI*2);ctx.fill();
+  }
+  const hg=ctx.createRadialGradient(px,py,0,px,py,22);
+  hg.addColorStop(0,rgba(C.photon,.82));hg.addColorStop(1,rgba(C.photon,0));
+  ctx.fillStyle=hg;ctx.beginPath();ctx.arc(px,py,22,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(255,248,185,.98)';ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=1;
+  const la=al*cl01(1-ph(t,.22,.38));
+  if(la>.05){ctx.globalAlpha=la;ctx.font='bold 9.5px system-ui';ctx.fillStyle=rgba(C.photon,.95);
+    ctx.fillText('photon',px+14,py+3);ctx.globalAlpha=1;}
+  if(absorb>0){
+    const r=absorb*54;
+    const bg=ctx.createRadialGradient(CX,FEAT_CY,0,CX,FEAT_CY,r);
+    bg.addColorStop(0,rgba(C.photon,.44*(1-absorb)));bg.addColorStop(1,rgba(C.photon,0));
+    ctx.fillStyle=bg;ctx.beginPath();ctx.arc(CX,FEAT_CY,r,0,Math.PI*2);ctx.fill();
+  }
+}
+
+// ── brain blob ────────────────────────────────────────────────────────
+function drawBrain(alpha){
+  const cx=648,cy=262;
+  ctx.save();ctx.globalAlpha=alpha;
+
+  // two-lobe organic blob
+  ctx.beginPath();
+  ctx.moveTo(cx-30,cy+2);
+  ctx.bezierCurveTo(cx-32,cy-16,cx-20,cy-28,cx-8,cy-27);
+  // central sulcus dip
+  ctx.bezierCurveTo(cx-3,cy-26,cx-1,cy-20,cx+1,cy-16);
+  // right lobe
+  ctx.bezierCurveTo(cx+3,cy-20,cx+8,cy-28,cx+20,cy-26);
+  ctx.bezierCurveTo(cx+32,cy-22,cx+32,cy-6,cx+30,cy+4);
+  // lower right / cerebellum hint
+  ctx.bezierCurveTo(cx+30,cy+16,cx+20,cy+27,cx+8,cy+28);
+  ctx.bezierCurveTo(cx+3,cy+29,cx-3,cy+29,cx-8,cy+28);
+  // lower left
+  ctx.bezierCurveTo(cx-20,cy+26,cx-32,cy+16,cx-30,cy+2);
+  ctx.closePath();
+
+  const gr=ctx.createRadialGradient(cx-8,cy-8,0,cx,cy,34);
+  gr.addColorStop(0,rgba([232,208,218],1));
+  gr.addColorStop(.65,rgba([212,182,196],.97));
+  gr.addColorStop(1,rgba([176,148,162],.93));
+  ctx.fillStyle=gr;ctx.fill();
+  ctx.strokeStyle=rgba([158,126,142],.82);ctx.lineWidth=1.3;ctx.stroke();
+
+  // gyri (surface folds)
+  ctx.strokeStyle=rgba([148,116,134],.48);ctx.lineWidth=.85;ctx.lineCap='round';
+  // central sulcus
+  ctx.beginPath();ctx.moveTo(cx+1,cy-16);ctx.quadraticCurveTo(cx+3,cy,cx+1,cy+18);ctx.stroke();
+  // left hemisphere folds
+  ctx.beginPath();ctx.moveTo(cx-18,cy-14);ctx.quadraticCurveTo(cx-22,cy-4,cx-18,cy+8);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx-10,cy+10);ctx.quadraticCurveTo(cx-16,cy+18,cx-10,cy+24);ctx.stroke();
+  // right hemisphere folds
+  ctx.beginPath();ctx.moveTo(cx+18,cy-12);ctx.quadraticCurveTo(cx+22,cy,cx+18,cy+10);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx+8,cy+13);ctx.quadraticCurveTo(cx+15,cy+20,cx+8,cy+25);ctx.stroke();
+
+  // label inside
+  ctx.font='bold 8px system-ui';ctx.fillStyle=rgba([98,68,84],.90);
+  ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('BRAIN',cx,cy+2);
+  ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  ctx.restore();
+}
+
+// ── myelinated nerve: from cone synapse curving to brain ──
+function drawNeuron(t){
+  if(t<.84)return;
+
+  const axonP=eo3(ph(t,.84,.97));
+  const termP=sm(ph(t,.92,.99));
+
+  // myelinated sheath segments
+  const shW=18,shH=9;
+  for(let i=0;i<N_SHEATHS;i++){
+    const{px,py,angle}=sheaths[i];
+    const segT=(i+.5)/N_SHEATHS;
+    const isActive=segT<=axonP;
+    const isPulse=Math.abs(segT-axonP)<.06;
+    const baseAl=isActive?.50:.10;
+    const shCol=isActive?C.activ:C.ax;
+    ctx.save();ctx.translate(px,py);ctx.rotate(angle);
+    const shG=ctx.createLinearGradient(0,-shH,0,shH);
+    shG.addColorStop(0,rgba(shCol.map(v=>Math.round(v*.6)),baseAl));
+    shG.addColorStop(.5,rgba(shCol,baseAl+.15));
+    shG.addColorStop(1,rgba(shCol.map(v=>Math.round(v*.6)),baseAl));
+    ctx.beginPath();if(ctx.roundRect)ctx.roundRect(-shW/2,-shH/2,shW,shH,shH/2);
+    else ctx.rect(-shW/2,-shH/2,shW,shH);
+    ctx.fillStyle=shG;ctx.fill();
+    if(isPulse){
+      ctx.globalAlpha=(1-Math.abs(segT-axonP)/.06)*.7;
+      ctx.beginPath();if(ctx.roundRect)ctx.roundRect(-shW/2,-shH/2,shW,shH,shH/2);
+      else ctx.rect(-shW/2,-shH/2,shW,shH);
+      ctx.fillStyle=rgba([255,255,255],.40);ctx.fill();
+    }
+    ctx.restore();
+  }
+  // pulse head dot
+  if(axonP>.01&&axonP<.97){
+    const[hx,hy]=bPt(axonP,AX_SX,AX_SY,AX_CX,AX_CY,AX_EX,AX_EY);
+    const hg=ctx.createRadialGradient(hx,hy,0,hx,hy,14);
+    hg.addColorStop(0,rgba(C.sig,.88));hg.addColorStop(1,rgba(C.sig,0));
+    ctx.fillStyle=hg;ctx.beginPath();ctx.arc(hx,hy,14,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=rgb(C.sig);ctx.beginPath();ctx.arc(hx,hy,4.5,0,Math.PI*2);ctx.fill();
+  }
+
+  // "nerve impulse sent" — above the nerve path midpoint
+  if(axonP>.1){
+    ctx.font='bold 9px system-ui';ctx.fillStyle=rgba(C.sig,.72);
+    ctx.fillText('nerve impulse sent',360,264);
+  }
+  // brain blob — dim hint while axon fires, fully lit when signal arrives
+  const brainAlpha=termP>.15?sm(termP):(axonP>.05?.22:0);
+  if(brainAlpha>.01) drawBrain(brainAlpha);
+}
+
+// ── background ────────────────────────────────────────────────────
+function drawBg(){
+  const g=ctx.createRadialGradient(CX,H*.38,0,CX,H*.38,H*.85);
+  g.addColorStop(0,rgb(C.bgG));g.addColorStop(1,rgb(C.bg));
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+
+function activeStep(t){
+  if(t<.09)return -1;if(t<.37)return 0;if(t<.55)return 1;if(t<.73)return 2;if(t<.96)return 3;return -1;
+}
+
+function draw(t){
+  drawBg();
+  const mainAct=sm(ph(t,.37,.56));
+  const leftAct=sm(ph(t,.40,.59))*.70;
+  const rightAct=sm(ph(t,.42,.61))*.56;
+  const cascadeT=sm(ph(t,.55,.70));
+  // synapse lights up as cascade reaches terminal (Step 3 tail) and through Step 4
+  const synAct=sm(ph(t,.67,.82));
+
+  ctx.save();ctx.globalAlpha=.50;
+  drawCone(CX_L,.62,0,leftAct,false,0,0);
+  drawCone(CX_R,.60,0,rightAct,false,0,0);
+  ctx.restore();
+
+  drawCone(CX,1.0,mainAct,0,true,cascadeT,synAct);
+  drawOSLabel(mainAct);
+  drawPhoton(t);
+  drawNeuron(t);
+  drawEyeInset(t);
+
+  ['s0','s1','s2','s3'].forEach((id,i)=>
+    document.getElementById(id).classList.toggle('active',i===activeStep(t)));
+}
+
+let t=0,running=true,lastTs=null;
+const CYCLE=9800;
+function loop(ts){
+  if(!running)return;
+  if(lastTs!==null)t=(t+(ts-lastTs)/CYCLE)%1;
+  lastTs=ts;draw(t);requestAnimationFrame(loop);
+}
+const btnPlay=document.getElementById('btn-play');
+document.getElementById('btn-restart').addEventListener('click',()=>{
+  t=0;lastTs=null;
+  if(!running){running=true;btnPlay.textContent='Pause';requestAnimationFrame(loop);}
+});
+function togglePlay(){
+  running=!running;btnPlay.textContent=running?'Pause':'Play';
+  if(running){lastTs=null;requestAnimationFrame(loop);}
+}
+btnPlay.addEventListener('click',togglePlay);
+document.getElementById('cvs').addEventListener('click',togglePlay);
+const STEP_T=[0.34,0.52,0.70,0.90];
+['s0','s1','s2','s3'].forEach((id,i)=>{
+  document.getElementById(id).addEventListener('click',e=>{
+    e.stopPropagation();t=STEP_T[i];lastTs=null;
+    if(running){running=false;btnPlay.textContent='Play';}draw(t);
+  });
+});
+running=false;btnPlay.textContent='Play';draw(0);
+</script>

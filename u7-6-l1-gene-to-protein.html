@@ -1,0 +1,306 @@
+<title>Gene to Protein</title>
+<style>
+  :root{--bg:#EDE6EA;--card:#FFFFFF;--text:#1A0812;--muted:#70566A;--accent:#6B1738;--step-bg:#DDD4DA;--step-active:#6B1738;--step-act-text:#FFFFFF;--btn-sec:#DDD4DA;--btn-sec-text:#5A3848;}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D0408;--card:#180810;--text:#E8D4DE;--muted:#886878;--accent:#CC3060;--step-bg:#220C16;--step-active:#CC3060;--step-act-text:#0D0408;--btn-sec:#220C16;--btn-sec-text:#886878;}}
+  :root[data-theme="dark"]{--bg:#0D0408;--card:#180810;--text:#E8D4DE;--muted:#886878;--accent:#CC3060;--step-bg:#220C16;--step-active:#CC3060;--step-act-text:#0D0408;--btn-sec:#220C16;--btn-sec-text:#886878;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,sans-serif;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:.75rem 1rem 1.5rem}
+  header{text-align:center;margin-bottom:1.25rem}
+  h1{font-size:1.35rem;font-weight:700;letter-spacing:-.015em;margin-bottom:.3rem}
+  .subtitle{font-size:.82rem;color:var(--muted)}
+  .card{background:var(--card);border-radius:16px;padding:1.125rem 1.125rem 1rem;box-shadow:0 2px 20px rgba(0,0,0,.10),0 1px 4px rgba(0,0,0,.06);max-width:1080px;width:100%;display:flex;flex-direction:column;gap:.875rem}
+  canvas{border-radius:10px;display:block;width:100%;height:auto;cursor:pointer}
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem}
+  @media(max-width:500px){.steps{grid-template-columns:repeat(2,1fr)}}
+  .step{padding:.45rem .5rem;border-radius:7px;font-size:.88rem;font-weight:500;text-align:center;background:var(--step-bg);color:var(--muted);transition:background .35s,color .35s;line-height:1.35;cursor:pointer;user-select:none}
+  .step.active{background:var(--step-active);color:var(--step-act-text);font-weight:600}
+  .step-num{display:block;font-size:.72rem;font-weight:600;opacity:.6;margin-bottom:.15rem;letter-spacing:.04em}
+  .controls{display:flex;gap:.5rem;justify-content:center}
+  button{background:var(--accent);color:#fff;border:none;border-radius:7px;padding:.45rem 1.4rem;font-size:.82rem;font-weight:600;cursor:pointer;letter-spacing:.01em;transition:opacity .15s}
+  button:hover{opacity:.82}
+  button.sec{background:var(--btn-sec);color:var(--btn-sec-text)}
+</style>
+<header>
+  <h1>Unit 7.6 &middot; L1 &mdash; Gene to Protein</h1>
+  <p class="subtitle">How DNA instructions become a working protein</p>
+</header>
+<div class="card">
+  <canvas id="cvs"></canvas>
+  <div class="steps">
+    <div class="step" id="s0"><span class="step-num">STEP 1</span>Gene found in DNA</div>
+    <div class="step" id="s1"><span class="step-num">STEP 2</span>mRNA copies the gene</div>
+    <div class="step" id="s2"><span class="step-num">STEP 3</span>mRNA exits through pore</div>
+    <div class="step" id="s3"><span class="step-num">STEP 4</span>Ribosome builds protein</div>
+  </div>
+  <div class="controls">
+    <button id="btn-play">Pause</button>
+    <button id="btn-restart" class="sec">Restart</button>
+  </div>
+</div>
+<script>
+const cv=document.getElementById('cvs'),ctx=cv.getContext('2d');
+const W=680,H=356;
+const _dpr=window.devicePixelRatio||1,_sc=Math.max(2,_dpr);
+cv.width=W*_sc;cv.height=H*_sc;ctx.scale(_sc,_sc);
+const cl01=x=>Math.max(0,Math.min(1,x));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const sm=t=>t*t*(3-2*t);
+const eo3=t=>1-Math.pow(1-t,3);
+const ph=(t,s,e)=>cl01((t-s)/(e-s));
+const rgb=([r,g,b])=>`rgb(${r},${g},${b})`;
+const rgba=([r,g,b],a)=>`rgba(${r},${g},${b},${a})`;
+const lRGB=(a,b,t)=>a.map((v,i)=>Math.round(lerp(v,b[i],t)));
+
+const C={
+  bg:[10,4,8],bgG:[20,8,15],
+  nuc:[14,26,52],nucMem:[55,88,150],
+  dna1:[70,126,220],dna2:[146,78,216],
+  rung:[122,150,186],gene:[200,38,88],
+  mrna:[228,158,42],
+  rib:[40,170,138],ribSm:[58,192,158],
+  prot:[[218,78,78],[78,178,220],[78,200,118],[220,178,40],[182,78,222],[222,132,58],[58,198,198],[218,80,162],[158,200,80]],
+  lbl:[172,204,232],
+};
+
+const NUC_CX=148,NUC_CY=178,NUC_R=102;
+const DNA_CX=140,DNA_AMP=15;
+const DNA_TOP=NUC_CY-66,DNA_BOT=NUC_CY+66;
+const GENE_TOP=NUC_CY-18,GENE_BOT=NUC_CY+18;
+const PORE_X=NUC_CX+NUC_R,PORE_Y=NUC_CY,PORE_GAP=18;
+const MRNA_Y=NUC_CY;
+const RIB_CX=442,RIB_CY=178;
+const CHAN=8;
+const RIB_BW=62,RIB_BH=32,RIB_SW=50,RIB_SH=24;
+const MRNA_RIB_IN=RIB_CX-RIB_SW/2;
+const MRNA_RIB_OUT=RIB_CX+RIB_SW/2;
+const PROT_START=MRNA_RIB_OUT+8;
+const AA_R=7,AA_GAP=18,N_AA=9;
+const FOLD_POS=[[535,195],[520,210],[530,226],[548,231],[566,226],[578,210],[570,196],[554,190],[553,212]];
+const CYCLE=11000;
+
+function drawBg(){
+  const g=ctx.createRadialGradient(W*.2,H*.45,0,W*.2,H*.45,W*.85);
+  g.addColorStop(0,rgb(C.bgG));g.addColorStop(1,rgb(C.bg));
+  ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+}
+
+function drawDNA(geneAct){
+  const freq=4*2*Math.PI/(DNA_BOT-DNA_TOP);
+  const N=132;
+  const nR=18;
+  for(let i=0;i<nR;i++){
+    const y=DNA_TOP+i*(DNA_BOT-DNA_TOP)/(nR-1);
+    const p=freq*(y-DNA_TOP);
+    const x1=DNA_CX+DNA_AMP*Math.sin(p),x2=DNA_CX-DNA_AMP*Math.sin(p);
+    const inG=y>=GENE_TOP&&y<=GENE_BOT;
+    const ga=inG?geneAct:0;
+    ctx.strokeStyle=rgba(lRGB(C.rung,[230,130,158],ga*.55),.50+ga*.32);
+    ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x2,y);ctx.stroke();
+  }
+  ctx.beginPath();
+  for(let i=0;i<=N;i++){const y=DNA_TOP+i*(DNA_BOT-DNA_TOP)/N;const x=DNA_CX+DNA_AMP*Math.sin(freq*(y-DNA_TOP));i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.strokeStyle=rgba(C.dna1,.84);ctx.lineWidth=2.2;ctx.stroke();
+  ctx.beginPath();
+  for(let i=0;i<=N;i++){const y=DNA_TOP+i*(DNA_BOT-DNA_TOP)/N;const x=DNA_CX-DNA_AMP*Math.sin(freq*(y-DNA_TOP));i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
+  ctx.strokeStyle=rgba(C.dna2,.80);ctx.lineWidth=2.2;ctx.stroke();
+  if(geneAct>.04){
+    const gy=(GENE_TOP+GENE_BOT)/2,gh=(GENE_BOT-GENE_TOP)/2+12;
+    const gg=ctx.createRadialGradient(DNA_CX,gy,0,DNA_CX,gy,DNA_AMP+22);
+    gg.addColorStop(0,rgba(C.gene,geneAct*.50));gg.addColorStop(1,rgba(C.gene,0));
+    ctx.fillStyle=gg;ctx.beginPath();ctx.ellipse(DNA_CX,gy,DNA_AMP+22,gh,0,0,Math.PI*2);ctx.fill();
+    const la=cl01((geneAct-.16)/.24);
+    if(la>.02){
+      ctx.save();ctx.globalAlpha=la;
+      ctx.font='bold 12px system-ui';ctx.fillStyle=rgba(C.gene,.94);
+      ctx.textAlign='right';ctx.fillText('GENE →',DNA_CX-DNA_AMP-2,MRNA_Y+3);
+      ctx.textAlign='left';ctx.restore();
+    }
+  }
+  ctx.font='11px system-ui';ctx.fillStyle=rgba(C.lbl,.26);ctx.fillText('DNA',DNA_CX-8,DNA_TOP-7);
+}
+
+function drawNucleusMembrane(){
+  const pa=Math.asin(PORE_GAP/2/NUC_R);
+  ctx.strokeStyle=rgba(C.nucMem,.68);ctx.lineWidth=4;
+  ctx.beginPath();ctx.arc(NUC_CX,NUC_CY,NUC_R,pa,2*Math.PI-pa);ctx.stroke();
+  ctx.strokeStyle=rgba(C.nucMem,.40);ctx.lineWidth=2;
+  ctx.beginPath();ctx.arc(NUC_CX,NUC_CY,NUC_R-5,pa,2*Math.PI-pa);ctx.stroke();
+  ctx.strokeStyle=rgba(C.nucMem,.58);ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(PORE_X-3,PORE_Y-PORE_GAP/2);ctx.lineTo(PORE_X+7,PORE_Y-PORE_GAP/2);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(PORE_X-3,PORE_Y+PORE_GAP/2);ctx.lineTo(PORE_X+7,PORE_Y+PORE_GAP/2);ctx.stroke();
+  ctx.font='12px system-ui';ctx.fillStyle=rgba(C.lbl,.26);
+  ctx.textAlign='center';ctx.fillText('NUCLEUS',NUC_CX,NUC_CY-NUC_R-8);
+  ctx.textAlign='left';ctx.fillText('nuclear pore',PORE_X+4,PORE_Y+PORE_GAP/2+14);
+}
+
+function drawMRNA(t){
+  const buildT=sm(ph(t,.22,.44));
+  const exitT=eo3(ph(t,.45,.60));
+  if(buildT<=0)return;
+  let rightX;
+  if(buildT<1){
+    rightX=lerp(DNA_CX+6,PORE_X-6,buildT);
+  } else if(exitT<1){
+    rightX=lerp(PORE_X-6,MRNA_RIB_IN-2,exitT);
+  } else {
+    rightX=MRNA_RIB_OUT;
+  }
+  const leftX=DNA_CX;
+  const al=cl01(buildT/.12);
+  ctx.save();ctx.globalAlpha=al;
+  ctx.strokeStyle=rgba(C.mrna,.92);ctx.lineWidth=2.5;ctx.lineCap='round';
+  ctx.beginPath();
+  ctx.moveTo(leftX,MRNA_Y+2.5*Math.sin(0.20*leftX));
+  for(let x=leftX+2;x<=rightX;x+=2){ctx.lineTo(x,MRNA_Y+2.5*Math.sin(0.20*x));}
+  ctx.stroke();
+  if(buildT>.45){
+    ctx.font='bold 12px system-ui';ctx.fillStyle=rgba(C.mrna,.90);
+    ctx.fillText('mRNA',leftX+5,MRNA_Y-14);
+  }
+  if(exitT>.08&&exitT<.88){
+    const ax=lerp(PORE_X+20,MRNA_RIB_IN-22,exitT);
+    ctx.fillStyle=rgba(C.mrna,.82);
+    ctx.beginPath();ctx.moveTo(ax,MRNA_Y-7);ctx.lineTo(ax,MRNA_Y+7);ctx.lineTo(ax+11,MRNA_Y);ctx.closePath();ctx.fill();
+  }
+  ctx.restore();
+}
+
+function drawRibosome(ribAct){
+  if(ribAct<=0)return;
+  const al=eo3(ribAct);
+  ctx.save();ctx.globalAlpha=al;
+  const cx=RIB_CX,cy=RIB_CY;
+  const tY=cy-CHAN-RIB_BH,bY=cy-CHAN;
+  const lg=ctx.createLinearGradient(cx,tY,cx,bY);
+  lg.addColorStop(0,rgba(C.rib.map(v=>Math.min(255,Math.round(v*1.38))),.95));
+  lg.addColorStop(1,rgba(C.rib,.90));
+  ctx.beginPath();ctx.roundRect(cx-RIB_BW/2,tY,RIB_BW,RIB_BH,10);ctx.fillStyle=lg;ctx.fill();
+  ctx.strokeStyle=rgba(C.rib.map(v=>Math.round(v*.5)),.50);ctx.lineWidth=1;ctx.stroke();
+  const hg=ctx.createRadialGradient(cx-RIB_BW*.22,tY+7,0,cx-RIB_BW*.22,tY+7,RIB_BW*.38);
+  hg.addColorStop(0,rgba([255,255,255],.22));hg.addColorStop(1,rgba([255,255,255],0));
+  ctx.fillStyle=hg;ctx.beginPath();ctx.roundRect(cx-RIB_BW/2,tY,RIB_BW,RIB_BH,10);ctx.fill();
+  const sY=cy+CHAN;
+  const sg=ctx.createLinearGradient(cx,sY,cx,sY+RIB_SH);
+  sg.addColorStop(0,rgba(C.ribSm,.92));sg.addColorStop(1,rgba(C.ribSm.map(v=>Math.round(v*.68)),.88));
+  ctx.beginPath();ctx.roundRect(cx-RIB_SW/2,sY,RIB_SW,RIB_SH,8);ctx.fillStyle=sg;ctx.fill();
+  ctx.strokeStyle=rgba(C.ribSm.map(v=>Math.round(v*.5)),.50);ctx.lineWidth=1;ctx.stroke();
+  ctx.font='12px system-ui';ctx.fillStyle=rgba(C.lbl,.34);
+  ctx.textAlign='center';ctx.fillText('RIBOSOME',cx,tY-9);ctx.textAlign='left';
+  ctx.restore();
+}
+
+function drawProtein(protT,foldT){
+  if(protT<=0)return;
+  foldT=foldT||0;
+  const shown=protT*(N_AA+0.6);
+  if(foldT>.4){
+    const ba=sm(cl01((foldT-.4)/.4));
+    const bg=ctx.createRadialGradient(553,213,0,553,213,42);
+    bg.addColorStop(0,rgba(C.gene,ba*.20));bg.addColorStop(1,rgba(C.gene,0));
+    ctx.fillStyle=bg;ctx.beginPath();ctx.ellipse(553,213,42,34,0,0,Math.PI*2);ctx.fill();
+  }
+  for(let i=0;i<N_AA;i++){
+    const fa=cl01(shown-i);
+    if(fa<=0)continue;
+    const linX=PROT_START+i*AA_GAP,linY=MRNA_Y;
+    const fldX=FOLD_POS[i][0],fldY=FOLD_POS[i][1];
+    const x=lerp(linX,fldX,foldT),y=lerp(linY,fldY,foldT);
+    if(i>0&&fa>.5){
+      const pi=i-1;
+      const px=lerp(PROT_START+pi*AA_GAP,FOLD_POS[pi][0],foldT);
+      const py=lerp(MRNA_Y,FOLD_POS[pi][1],foldT);
+      ctx.save();ctx.globalAlpha=cl01((fa-.5)/.35);
+      ctx.strokeStyle=rgba(C.prot[i%C.prot.length],.52);ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(x,y);ctx.stroke();
+      ctx.restore();
+    }
+    const col=C.prot[i%C.prot.length];
+    const ag=ctx.createRadialGradient(x-AA_R*.3,y-AA_R*.3,0,x,y,AA_R);
+    ag.addColorStop(0,rgba(col.map(v=>Math.min(255,Math.round(v*1.3))),.96));
+    ag.addColorStop(1,rgba(col,.88));
+    ctx.save();ctx.globalAlpha=fa;
+    ctx.beginPath();ctx.arc(x,y,AA_R,0,Math.PI*2);ctx.fillStyle=ag;ctx.fill();
+    ctx.restore();
+  }
+  if(protT>.12&&foldT<.5){
+    ctx.save();ctx.globalAlpha=cl01((protT-.12)/.16)*cl01(1-foldT*2);
+    ctx.font='11px system-ui';ctx.fillStyle=rgba(C.lbl,.36);
+    ctx.fillText('amino acids',PROT_START-2,MRNA_Y+AA_R+16);
+    ctx.restore();
+  }
+  if(protT>.62&&foldT<.45){
+    ctx.save();ctx.globalAlpha=cl01((protT-.62)/.18)*cl01(1-foldT/.45);
+    ctx.font='bold 12px system-ui';ctx.fillStyle=rgba(C.gene,.84);
+    ctx.fillText('PROTEIN',PROT_START+26,MRNA_Y-AA_R-11);
+    ctx.restore();
+  }
+  if(foldT>.35){
+    ctx.save();ctx.globalAlpha=sm(cl01((foldT-.35)/.35));
+    ctx.font='bold 12px system-ui';ctx.fillStyle=rgba(C.gene,.90);
+    ctx.textAlign='center';ctx.fillText('PROTEIN',553,178);ctx.textAlign='left';
+    ctx.restore();
+  }
+}
+
+function activeStep(t){
+  if(t<.08)return -1;
+  if(t<.22)return 0;
+  if(t<.45)return 1;
+  if(t<.62)return 2;
+  if(t<.95)return 3;
+  return -1;
+}
+
+function draw(t){
+  drawBg();
+  const appear=sm(ph(t,.01,.10));
+  const geneAct=sm(ph(t,.08,.24))*(1-sm(ph(t,.54,.66)));
+  const ribAct=sm(ph(t,.48,.62));
+  const protT=ph(t,.62,.92);
+  const foldT=sm(ph(t,.88,.97));
+
+  ctx.save();ctx.globalAlpha=appear;
+  const ng=ctx.createRadialGradient(NUC_CX-18,NUC_CY-18,0,NUC_CX,NUC_CY,NUC_R);
+  ng.addColorStop(0,rgba(C.nuc.map(v=>Math.round(v*1.38)),.92));
+  ng.addColorStop(1,rgba(C.nuc,.85));
+  ctx.beginPath();ctx.arc(NUC_CX,NUC_CY,NUC_R-1,0,Math.PI*2);ctx.fillStyle=ng;ctx.fill();
+  ctx.restore();
+
+  ctx.save();ctx.globalAlpha=appear;
+  ctx.beginPath();ctx.arc(NUC_CX,NUC_CY,NUC_R-3,0,Math.PI*2);ctx.clip();
+  drawDNA(geneAct);
+  ctx.restore();
+
+  ctx.save();ctx.globalAlpha=appear;drawMRNA(t);ctx.restore();
+
+  ctx.save();ctx.globalAlpha=appear;drawNucleusMembrane();ctx.restore();
+
+  drawRibosome(ribAct);
+
+  ctx.save();ctx.globalAlpha=appear;drawProtein(protT,foldT);ctx.restore();
+
+  ['s0','s1','s2','s3'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',i===activeStep(t)));
+}
+
+let t=0,running=true,lastTs=null;
+function loop(ts){
+  if(!running)return;
+  if(lastTs!==null)t=(t+(ts-lastTs)/CYCLE)%1;
+  lastTs=ts;draw(t);requestAnimationFrame(loop);
+}
+const btnPlay=document.getElementById('btn-play');
+document.getElementById('btn-restart').addEventListener('click',()=>{t=0;lastTs=null;if(!running){running=true;btnPlay.textContent='Pause';requestAnimationFrame(loop);}});
+function togglePlay(){running=!running;btnPlay.textContent=running?'Pause':'Play';if(running){lastTs=null;requestAnimationFrame(loop);}}
+btnPlay.addEventListener('click',togglePlay);
+document.getElementById('cvs').addEventListener('click',togglePlay);
+const STEP_T=[0.20,0.42,0.60,0.85];
+['s0','s1','s2','s3'].forEach((id,i)=>{
+  document.getElementById(id).addEventListener('click',e=>{
+    e.stopPropagation();
+    t=STEP_T[i];lastTs=null;
+    if(running){running=false;btnPlay.textContent='Play';}
+    draw(t);
+  });
+});
+running=false;btnPlay.textContent='Play';draw(0);
+</script>
