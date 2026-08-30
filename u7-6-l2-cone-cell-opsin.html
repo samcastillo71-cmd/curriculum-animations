@@ -584,7 +584,7 @@ function togglePlay(){
 }
 btnPlay.addEventListener('click',togglePlay);
 document.getElementById('cvs').addEventListener('click',togglePlay);
-const STEP_T=[0.34,0.52,0.70,0.90];
+const STEP_T=[0.34,0.44,0.62,0.90];
 ['s0','s1','s2','s3'].forEach((id,i)=>{
   document.getElementById(id).addEventListener('click',e=>{
     e.stopPropagation();t=STEP_T[i];lastTs=null;

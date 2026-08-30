@@ -43,8 +43,8 @@
   <div class="steps">
     <div class="step" id="s0"><span class="step-num">STEP 1</span>Molecule enters taste pore</div>
     <div class="step" id="s1"><span class="step-num">STEP 2</span>Molecule binds receptor protein</div>
-    <div class="step" id="s2"><span class="step-num">STEP 3</span>Protein changes shape &rarr; Ca²⁺ cascade</div>
-    <div class="step" id="s3"><span class="step-num">STEP 4</span>ATP released &rarr; signal to brain</div>
+    <div class="step" id="s2"><span class="step-num">STEP 3</span>Protein changes shape &rarr; Ca&sup2;&plussim; cascade</div>
+    <div class="step" id="s3"><span class="step-num">STEP 4</span>Signal sent to brain</div>
   </div>
   <div class="controls">
     <button id="btn-play">Pause</button>
@@ -70,119 +70,70 @@ const rgba=([r,g,b],a)=>`rgba(${r},${g},${b},${a})`;
 
 const C={
   bg:[10,14,22],bgG:[16,22,36],
-  main:[88,60,40],mainBr:[148,108,72],flnk:[65,48,32],
+  main:[88,60,40],flnk:[65,48,32],
   mem:[112,84,58],
   rec:[68,106,152],recAct:[218,158,38],
   mv:[102,76,50],nuc:[50,34,22],
-  mol:[218,158,38],ca:[80,180,240],  // Ca2+ ion color (blue-cyan)
-  atp:[255,200,60],                   // ATP particle color
+  mol:[218,158,38],ca:[80,180,240],
   ep:[44,36,28],pore:[26,20,14],
   sig:[228,88,66],ax:[118,128,142],
   lbl:[175,200,228],
 };
 
-// ── taste bud geometry ─────────────────────────────────────────────
 const CX=200;
 const BUD_CY=183,BUD_RX=56,BUD_RY=118;
-const BUD_TOP=BUD_CY-BUD_RY;   // ≈41
-const BUD_BOT=BUD_CY+BUD_RY;   // ≈325
-const PORE_Y=BUD_TOP-3;
-const PORE_W=10;
+const BUD_TOP=BUD_CY-BUD_RY,BUD_BOT=BUD_CY+BUD_RY;
+const PORE_Y=BUD_TOP-3,PORE_W=10;
 const SURF_Y=BUD_TOP+7;
-const CELL_TOP=BUD_TOP+14;      // ≈55 — apical tips
-const CELL_BOT=BUD_BOT-12;     // ≈313
-const CELL_H=CELL_BOT-CELL_TOP;
-
-// Per-cell widths (very slender spindles)
+const CELL_TOP=BUD_TOP+14,CELL_BOT=BUD_BOT-12,CELL_H=CELL_BOT-CELL_TOP;
 const MAIN_RX=11,FLNK1_RX=9,FLNK2_RX=8;
 const FLNK2L=CX-32,FLNK1L=CX-17,FLNK1R=CX+17,FLNK2R=CX+32;
-
-// Receptor sits in apical membrane of main cell
 const REC_Y=CELL_TOP+8,REC_W=14,REC_H=20;
-
-// Nucleus
-const NUC_CY=CELL_TOP+Math.round(CELL_H*0.60);
-const NUC_RX=9,NUC_RY=12;
-
-// Axon + synapse at basal tip
+const NUC_CY=CELL_TOP+Math.round(CELL_H*0.60),NUC_RX=9,NUC_RY=12;
 const AX_TOP=CELL_BOT+4,AX_BOT=AX_TOP+16,AX_W=3;
 const ST_CY=AX_BOT+8,ST_R=8;
-
-// Signal path (bezier to brain icon)
-const SX=CX+ST_R+5,SY=ST_CY;
-const SCX=420,SCY=ST_CY-18;
-const SEX=W-62,SEY=ST_CY-28;
-
-// Tongue inset (top right, compact)
+const SX=CX+ST_R+5,SY=ST_CY,SCX=420,SCY=ST_CY-18,SEX=W-62,SEY=ST_CY-28;
 const TX=460,TY=10,TW=208,TH=90;
 
-// ── cell profile function (shared) ─────────────────────────────────
 function cellRx(y,maxRx){
   const f=(y-CELL_TOP)/CELL_H;
   return maxRx*Math.pow(4*f*(1-f),0.55)*(1+0.18*Math.sin(f*Math.PI));
 }
-
-// ── clip to cell outline ────────────────────────────────────────────
 function pathCell(cx,maxRx){
-  const N=60;
-  ctx.moveTo(cx,CELL_TOP);
+  const N=60;ctx.moveTo(cx,CELL_TOP);
   for(let i=1;i<=N;i++){const y=CELL_TOP+i*CELL_H/N;ctx.lineTo(cx+cellRx(y,maxRx),y);}
   for(let i=N;i>=0;i--){const y=CELL_TOP+i*CELL_H/N;ctx.lineTo(cx-cellRx(y,maxRx),y);}
   ctx.closePath();
 }
 
-// ── draw one taste cell ─────────────────────────────────────────────
 function drawTasteCell(cx,maxRx,colBody,al,cascadeWave){
-  // Lateral gradient for 3D
   const grad=ctx.createLinearGradient(cx-maxRx,CELL_TOP,cx+maxRx,CELL_TOP);
   const dk=colBody.map(v=>Math.round(v*.5));
   const br=colBody.map(v=>Math.min(255,Math.round(v*1.35)));
-  grad.addColorStop(0,rgba(dk,al*.92));
-  grad.addColorStop(.18,rgba(br,al*.96));
-  grad.addColorStop(.82,rgba(colBody,al*.96));
-  grad.addColorStop(1,rgba(dk,al*.92));
-
-  ctx.save();
-  ctx.beginPath();pathCell(cx,maxRx);
-  ctx.fillStyle=grad;ctx.fill();
-
-  // Cascade wave INSIDE the cell (only for main cell with cascadeWave > 0)
+  grad.addColorStop(0,rgba(dk,al*.92));grad.addColorStop(.18,rgba(br,al*.96));
+  grad.addColorStop(.82,rgba(colBody,al*.96));grad.addColorStop(1,rgba(dk,al*.92));
+  ctx.save();ctx.beginPath();pathCell(cx,maxRx);ctx.fillStyle=grad;ctx.fill();
   if(cascadeWave>0){
-    ctx.save();
-    ctx.beginPath();pathCell(cx,maxRx);ctx.clip();
-
+    ctx.save();ctx.beginPath();pathCell(cx,maxRx);ctx.clip();
     const waveY=CELL_TOP+cascadeWave*CELL_H;
-
-    // Activated region from top to wave front
     const actGrad=ctx.createLinearGradient(cx,CELL_TOP,cx,waveY);
     actGrad.addColorStop(0,rgba(lRGB(colBody,C.recAct,.55),.65));
     actGrad.addColorStop(1,rgba(C.recAct,.50));
     ctx.fillStyle=actGrad;
     ctx.fillRect(cx-maxRx-4,CELL_TOP,maxRx*2+8,Math.max(0,waveY-CELL_TOP+4));
-
-    // Wave front glow (bright band)
     const wFront=28;
     const wg=ctx.createLinearGradient(cx,Math.max(CELL_TOP,waveY-wFront),cx,waveY+6);
-    wg.addColorStop(0,rgba(C.recAct,0));
-    wg.addColorStop(.7,rgba([255,220,90],.88));
+    wg.addColorStop(0,rgba(C.recAct,0));wg.addColorStop(.7,rgba([255,220,90],.88));
     wg.addColorStop(1,rgba(C.recAct,.12));
-    ctx.fillStyle=wg;
-    ctx.fillRect(cx-maxRx-4,Math.max(CELL_TOP,waveY-wFront),maxRx*2+8,wFront+10);
-
+    ctx.fillStyle=wg;ctx.fillRect(cx-maxRx-4,Math.max(CELL_TOP,waveY-wFront),maxRx*2+8,wFront+10);
     ctx.restore();
-
-    // Ca2+ particles travelling inside cell
-    const N_PART=9;
-    for(let i=0;i<N_PART;i++){
-      const pp=cl01(cascadeWave-i*(1/N_PART)*.8);
+    for(let i=0;i<9;i++){
+      const pp=cl01(cascadeWave-i*(1/9)*.8);
       if(pp<=0.01||pp>=0.96)continue;
-      const py=CELL_TOP+pp*CELL_H;
-      const mr=cellRx(py,maxRx)*0.48;
-      const px=cx+Math.sin(i*2.7)*mr;
-      const pa=Math.sin(pp*Math.PI)*0.85;
+      const py=CELL_TOP+pp*CELL_H,mr=cellRx(py,maxRx)*0.48;
+      const px=cx+Math.sin(i*2.7)*mr,pa=Math.sin(pp*Math.PI)*0.85;
       ctx.beginPath();ctx.arc(px,py,2.8,0,Math.PI*2);
       ctx.fillStyle=rgba(C.ca,pa);ctx.fill();
-      // tiny 2+ superscript feel
       ctx.fillStyle=rgba([255,255,255],pa*.7);
       ctx.font='5px system-ui';ctx.fillText('2+',px+3,py-2);
     }
@@ -190,84 +141,56 @@ function drawTasteCell(cx,maxRx,colBody,al,cascadeWave){
   ctx.restore();
 }
 
-// ── tongue epithelium ───────────────────────────────────────────────
 function drawEpithelium(){
   ctx.save();
-  ctx.beginPath();ctx.rect(0,0,W,SURF_Y+10);
-  ctx.fillStyle=rgba(C.ep,.88);ctx.fill();
-
+  ctx.beginPath();ctx.rect(0,0,W,SURF_Y+10);ctx.fillStyle=rgba(C.ep,.88);ctx.fill();
   ctx.beginPath();ctx.ellipse(CX,BUD_CY,BUD_RX,BUD_RY,0,0,Math.PI*2);
   ctx.fillStyle=rgba([16,12,8],.93);ctx.fill();
-
-  ctx.beginPath();ctx.rect(0,0,W,SURF_Y);
-  ctx.fillStyle=rgba(C.ep,.9);ctx.fill();
-
-  // Taste pore
+  ctx.beginPath();ctx.rect(0,0,W,SURF_Y);ctx.fillStyle=rgba(C.ep,.9);ctx.fill();
   ctx.beginPath();ctx.ellipse(CX,SURF_Y,PORE_W/2,4,0,0,Math.PI*2);
   ctx.fillStyle=rgba(C.pore,.96);ctx.fill();
   ctx.restore();
 }
 
 function drawBudOutline(){
-  ctx.save();
-  ctx.strokeStyle=rgba(C.mem,.25);ctx.lineWidth=1.4;ctx.setLineDash([3,4]);
+  ctx.save();ctx.strokeStyle=rgba(C.mem,.25);ctx.lineWidth=1.4;ctx.setLineDash([3,4]);
   ctx.beginPath();ctx.ellipse(CX,BUD_CY,BUD_RX+2,BUD_RY+2,0,0,Math.PI*2);
   ctx.stroke();ctx.setLineDash([]);ctx.restore();
 }
 
-// ── microvilli ──────────────────────────────────────────────────────
 function drawMicrovilli(recAct){
   const col=lRGB(C.mv,C.recAct,recAct*.4);
-  const N=5,spread=8,mvH=14;
-  for(let i=0;i<N;i++){
-    const mx=CX-spread+(i/(N-1))*spread*2;
-    const mh=mvH*(0.78+0.22*Math.cos(i*1.3));
+  for(let i=0;i<5;i++){
+    const mx=CX-8+(i/4)*16,mh=14*(0.78+0.22*Math.cos(i*1.3));
     const vg=ctx.createLinearGradient(mx,CELL_TOP-mh,mx,CELL_TOP);
     vg.addColorStop(0,rgba(col.map(v=>Math.min(255,Math.round(v*1.2))),.86));
     vg.addColorStop(1,rgba(col,.8));
-    ctx.fillStyle=vg;
-    ctx.beginPath();ctx.roundRect(mx-1.8,CELL_TOP-mh,3.6,mh,2);ctx.fill();
+    ctx.fillStyle=vg;ctx.beginPath();ctx.roundRect(mx-1.8,CELL_TOP-mh,3.6,mh,2);ctx.fill();
   }
 }
 
-// ── receptor protein (GPCR, shows shape change) ─────────────────────
 function drawReceptor(recAct,docked,wobble){
   const col=lRGB(C.rec,C.recAct,recAct);
-  const dk=col.map(v=>Math.round(v*.5));
-  const br=col.map(v=>Math.min(255,Math.round(v*1.3)));
-
-  // Apical membrane band
+  const dk=col.map(v=>Math.round(v*.5)),br=col.map(v=>Math.min(255,Math.round(v*1.3)));
   const memY=CELL_TOP-4,memH=9;
   const mg=ctx.createLinearGradient(CX-MAIN_RX,memY,CX+MAIN_RX,memY);
   mg.addColorStop(0,rgba(C.mem.map(v=>Math.round(v*.6)),.9));
-  mg.addColorStop(.5,rgba(C.mem,.95));
-  mg.addColorStop(1,rgba(C.mem.map(v=>Math.round(v*.6)),.9));
+  mg.addColorStop(.5,rgba(C.mem,.95));mg.addColorStop(1,rgba(C.mem.map(v=>Math.round(v*.6)),.9));
   ctx.fillStyle=mg;ctx.fillRect(CX-MAIN_RX-2,memY,MAIN_RX*2+4,memH);
-
-  // 3 helix cylinders — shift apart during wobble to show shape change
   const spreadW=wobble*3;
   [[-1,0],[0,0],[1,0]].forEach(([h],idx)=>{
     const hx=CX+h*(4+spreadW);
     const hg=ctx.createLinearGradient(hx-3,REC_Y,hx+3,REC_Y);
-    hg.addColorStop(0,rgba(dk,.9));
-    hg.addColorStop(.5,rgba(col,.97));
-    hg.addColorStop(1,rgba(dk,.9));
-    ctx.fillStyle=hg;
-    ctx.beginPath();ctx.roundRect(hx-3,REC_Y+wobble*(idx===1?0:2),6,REC_H,3);ctx.fill();
+    hg.addColorStop(0,rgba(dk,.9));hg.addColorStop(.5,rgba(col,.97));hg.addColorStop(1,rgba(dk,.9));
+    ctx.fillStyle=hg;ctx.beginPath();ctx.roundRect(hx-3,REC_Y+wobble*(idx===1?0:2),6,REC_H,3);ctx.fill();
     ctx.beginPath();ctx.ellipse(hx,REC_Y+wobble*(idx===1?0:2)+2,3,2.5,0,0,Math.PI*2);
     ctx.fillStyle=rgba(br,.9);ctx.fill();
   });
-
-  // Binding pocket
-  const cupY=REC_Y+1;
-  ctx.beginPath();ctx.ellipse(CX,cupY+(docked?5:3),5,docked?4:5,0,0,Math.PI*2);
+  ctx.beginPath();ctx.ellipse(CX,REC_Y+1+(docked?5:3),5,docked?4:5,0,0,Math.PI*2);
   ctx.fillStyle=rgba(dk,.85);ctx.fill();
-
-  // Specular
   const hg=ctx.createRadialGradient(CX-REC_W*.2,REC_Y+2,0,CX-REC_W*.2,REC_Y+2,REC_W*.36);
   hg.addColorStop(0,rgba([255,255,255],.22+recAct*.15));hg.addColorStop(1,rgba([255,255,255],0));
   ctx.fillStyle=hg;ctx.beginPath();ctx.ellipse(CX,REC_Y+2,REC_W/2,5,0,0,Math.PI*2);ctx.fill();
-
   if(recAct>.08){
     ctx.save();ctx.globalAlpha=recAct*.45;
     const gg=ctx.createRadialGradient(CX,REC_Y+REC_H/2,0,CX,REC_Y+REC_H/2,REC_W+16);
@@ -277,7 +200,6 @@ function drawReceptor(recAct,docked,wobble){
   }
 }
 
-// ── nucleus ─────────────────────────────────────────────────────────
 function drawNucleus(){
   const ng=ctx.createRadialGradient(CX-3,NUC_CY-3,0,CX,NUC_CY,NUC_RX);
   ng.addColorStop(0,rgba(C.nuc.map(v=>Math.min(255,Math.round(v*1.6))),.92));
@@ -288,7 +210,6 @@ function drawNucleus(){
   ctx.fillStyle=rgba(C.nuc.map(v=>Math.round(v*.55)),.88);ctx.fill();
 }
 
-// ── brain blob ────────────────────────────────────────────────────────
 function drawBrain(alpha){
   const cx=644,cy=289;
   ctx.save();ctx.globalAlpha=alpha;
@@ -303,8 +224,7 @@ function drawBrain(alpha){
   ctx.bezierCurveTo(cx-20,cy+26,cx-32,cy+16,cx-30,cy+2);
   ctx.closePath();
   const gr=ctx.createRadialGradient(cx-8,cy-8,0,cx,cy,34);
-  gr.addColorStop(0,rgba([232,208,218],1));
-  gr.addColorStop(.65,rgba([212,182,196],.97));
+  gr.addColorStop(0,rgba([232,208,218],1));gr.addColorStop(.65,rgba([212,182,196],.97));
   gr.addColorStop(1,rgba([176,148,162],.93));
   ctx.fillStyle=gr;ctx.fill();
   ctx.strokeStyle=rgba([158,126,142],.82);ctx.lineWidth=1.3;ctx.stroke();
@@ -315,18 +235,13 @@ function drawBrain(alpha){
   ctx.beginPath();ctx.moveTo(cx+18,cy-12);ctx.quadraticCurveTo(cx+22,cy,cx+18,cy+10);ctx.stroke();
   ctx.beginPath();ctx.moveTo(cx+8,cy+13);ctx.quadraticCurveTo(cx+15,cy+20,cx+8,cy+25);ctx.stroke();
   ctx.font='bold 8px system-ui';ctx.fillStyle=rgba([98,68,84],.90);
-  ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.fillText('BRAIN',cx,cy+2);
-  ctx.textAlign='left';ctx.textBaseline='alphabetic';
-  ctx.restore();
+  ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('BRAIN',cx,cy+2);
+  ctx.textAlign='left';ctx.textBaseline='alphabetic';ctx.restore();
 }
 
-// ── axon + synapse ──────────────────────────────────────────────────
-function drawAxon(atpAct){
+function drawAxon(synAct){
   ctx.fillStyle=rgba(C.ax,.82);ctx.fillRect(CX-AX_W,AX_TOP,AX_W*2,AX_BOT-AX_TOP);
-
-  // synapse — dark when idle, lights up as ATP fires
-  const sa=atpAct||0;
+  const sa=synAct||0;
   const synCol=lRGB(C.bg,C.sig,sa);
   const sg=ctx.createRadialGradient(CX-ST_R*.3,ST_CY-ST_R*.3,0,CX,ST_CY,ST_R);
   sg.addColorStop(0,rgba(synCol.map(v=>Math.min(255,Math.round(v*1.35))),.45+sa*.50));
@@ -340,8 +255,6 @@ function drawAxon(atpAct){
     ctx.fillStyle=syg;ctx.beginPath();ctx.arc(CX,ST_CY,ST_R+12,0,Math.PI*2);ctx.fill();
     ctx.restore();
   }
-
-  // pulse dot traveling down the axon as signal fires
   if(sa>.02&&sa<.92){
     const pulseY=lerp(AX_TOP,AX_BOT,sa);
     ctx.save();
@@ -353,43 +266,14 @@ function drawAxon(atpAct){
   }
 }
 
-// ── ATP release at synapse ──────────────────────────────────────────
-function drawATPRelease(atpAct){
-  if(atpAct<=0)return;
-  const N=6;
-  for(let i=0;i<N;i++){
-    const angle=Math.PI*(0.35+i/(N-1)*.3);
-    const dist=atpAct*18+Math.sin(atpAct*Math.PI+i)*4;
-    const px=CX+Math.cos(angle)*dist;
-    const py=ST_CY+Math.sin(angle)*dist*0.55;
-    const pa=atpAct*(0.55+i*.05);
-    ctx.beginPath();ctx.arc(px,py,3.5,0,Math.PI*2);
-    ctx.fillStyle=rgba(C.atp,pa);ctx.fill();
-    // tiny "ATP" label on first dot
-    if(i===0&&atpAct>.3){
-      ctx.font='bold 8px system-ui';ctx.fillStyle=rgba(C.atp,atpAct*.85);
-      ctx.fillText('ATP',px-14,py+10);
-    }
-  }
-  // glow at synapse base
-  const bg=ctx.createRadialGradient(CX,ST_CY,0,CX,ST_CY,ST_R+atpAct*22);
-  bg.addColorStop(0,rgba(C.atp,atpAct*.45));bg.addColorStop(1,rgba(C.atp,0));
-  ctx.fillStyle=bg;ctx.beginPath();ctx.arc(CX,ST_CY,ST_R+atpAct*22,0,Math.PI*2);ctx.fill();
-}
-
-// ── bitter molecule ─────────────────────────────────────────────────
 function drawMolecule(t){
-  const descend=eo3(ph(t,.08,.40));
-  const bind=ph(t,.40,.50);
-  if(bind>=1)return true;
-  const targetY=REC_Y+2;
-  const startY=PORE_Y-20;
-  const mx=lerp(CX+4,CX,descend);
-  const my=lerp(startY,targetY,descend);
+  const descend=eo3(ph(t,.08,.30));
+  const bind=ph(t,.30,.42);
+  if(bind>=1)return;
+  const targetY=REC_Y+2,startY=PORE_Y-20;
+  const mx=lerp(CX+4,CX,descend),my=lerp(startY,targetY,descend);
   const al=1-bind;
-
   ctx.globalAlpha=al;
-  // trail
   for(let i=4;i>=1;i--){
     const s=cl01(descend-i*.055);
     const tx=lerp(CX+4,CX,eo3(s)),ty=lerp(startY,targetY,eo3(s));
@@ -397,7 +281,6 @@ function drawMolecule(t){
     tg.addColorStop(0,rgba(C.mol,(1-i/5)*.24));tg.addColorStop(1,rgba(C.mol,0));
     ctx.fillStyle=tg;ctx.beginPath();ctx.arc(tx,ty,lerp(8,2.5,i/4),0,Math.PI*2);ctx.fill();
   }
-  // hexagon
   const r=5.5;
   ctx.fillStyle=rgba(C.mol,.92);ctx.beginPath();
   for(let i=0;i<6;i++){const a=i*Math.PI/3-Math.PI/6;i===0?ctx.moveTo(mx+r*Math.cos(a),my+r*Math.sin(a)):ctx.lineTo(mx+r*Math.cos(a),my+r*Math.sin(a));}
@@ -406,16 +289,13 @@ function drawMolecule(t){
   hg.addColorStop(0,rgba(C.mol,.4));hg.addColorStop(1,rgba(C.mol,0));
   ctx.fillStyle=hg;ctx.beginPath();ctx.arc(mx,my,15,0,Math.PI*2);ctx.fill();
   ctx.globalAlpha=1;
-
-  // label — right side with leader line, descend < 0.85 only
-  const la=al*cl01(1-ph(t,.26,.42));
+  const la=al*cl01(1-ph(t,.18,.34));
   if(la>.06){
     ctx.globalAlpha=la;
-    const lx=mx+22,ly=my;
     ctx.strokeStyle=rgba(C.mol,.55);ctx.lineWidth=.8;
-    ctx.beginPath();ctx.moveTo(mx+r,my);ctx.lineTo(lx,ly);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(mx+r,my);ctx.lineTo(mx+22,my);ctx.stroke();
     ctx.font='bold 9px system-ui';ctx.fillStyle=rgba(C.mol,.92);
-    ctx.fillText('bitter molecule',lx+2,ly+3);
+    ctx.fillText('bitter molecule',mx+24,my+3);
     ctx.globalAlpha=1;
   }
   if(bind>0){
@@ -424,17 +304,16 @@ function drawMolecule(t){
     bg.addColorStop(0,rgba(C.mol,.36*(1-bind)));bg.addColorStop(1,rgba(C.mol,0));
     ctx.fillStyle=bg;ctx.beginPath();ctx.arc(CX,targetY,r2,0,Math.PI*2);ctx.fill();
   }
-  return false;
 }
 
-// ── tongue inset ────────────────────────────────────────────────────
 function drawTongueInset(t){
   const appear=sm(ph(t,.02,.14));
-  ctx.globalAlpha=.26+appear*.67;
+  const tongOut=1-sm(ph(t,.50,.62));
+  if(tongOut<=0.01)return;
+  ctx.globalAlpha=(.26+appear*.67)*tongOut;
   ctx.save();ctx.beginPath();ctx.roundRect(TX,TY,TW,TH,6);
   ctx.fillStyle=rgba([12,8,6],.75);ctx.fill();
   ctx.strokeStyle=rgba([120,90,60],.4);ctx.lineWidth=1;ctx.stroke();ctx.restore();
-
   ctx.save();ctx.beginPath();ctx.roundRect(TX+1,TY+1,TW-2,TH-2,5);ctx.clip();
   const tongTop=TY+20;
   ctx.beginPath();ctx.roundRect(TX+4,tongTop,TW-8,TH-tongTop+TY-4,3);
@@ -447,7 +326,7 @@ function drawTongueInset(t){
     ctx.fillStyle=rgba([170,88,98],.68);ctx.fill();
   }
   const buds=[TX+TW*.26,TX+TW*.48,TX+TW*.70];
-  const actGlow=sm(ph(t,.40,.62));
+  const actGlow=sm(ph(t,.34,.54));
   buds.forEach((bx,idx)=>{
     const isC=idx===1;
     const bc=isC?lRGB([78,52,36],C.recAct,actGlow*.7):[68,48,32];
@@ -463,23 +342,18 @@ function drawTongueInset(t){
   ctx.strokeStyle=rgba(C.recAct,.20+actGlow*.46);ctx.lineWidth=1;
   ctx.setLineDash([2.5,2.5]);ctx.stroke();ctx.setLineDash([]);
   ctx.restore();
-
   ctx.font='7.5px system-ui';ctx.fillStyle=rgba(C.lbl,.38);
   ctx.fillText('TONGUE (cross-section)',TX+5,TY+10);
   ctx.globalAlpha=1;
-
-  // zoom connector line from inset → taste pore
-  const connA=.10+actGlow*.22;
+  const connA=(.10+actGlow*.22)*tongOut;
   ctx.save();ctx.strokeStyle=rgba(C.recAct,connA);ctx.lineWidth=.9;ctx.setLineDash([3,5]);
   ctx.beginPath();ctx.moveTo(zx-13,zy);
   ctx.bezierCurveTo(zx-60,zy+42,CX+38,PORE_Y+8,CX,PORE_Y+12);ctx.stroke();
   ctx.setLineDash([]);ctx.restore();
 }
 
-// ── leader line helper ──────────────────────────────────────────────
-// tx,ty = tip (points at structure); lx,ly = label anchor; right = text is right-aligned
 function leader_(tx,ty,lx,ly,label,right,al){
-  al=al==null?1:al;
+  if((al||0)<=0.01)return;
   ctx.save();ctx.globalAlpha=al;
   ctx.strokeStyle=rgba(C.lbl,.26);ctx.lineWidth=.85;
   ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(lx,ly);ctx.stroke();
@@ -489,88 +363,55 @@ function leader_(tx,ty,lx,ly,label,right,al){
   ctx.textAlign='left';ctx.restore();
 }
 
-// ── anatomy labels ──────────────────────────────────────────────────
-function drawLabels(recAct,cascadeWave){
-  // ── TOP AREA — spaced leader labels ──
-  // Taste pore: left side — anchor near top of canvas
-  leader_(CX-PORE_W/2+2,PORE_Y+5,
-          CX-40,10,
-          'TASTE PORE',true);
+function drawLabels(t,recAct,cascadeWave){
+  const MAX=0.52,DIM=0.18;
+  const g1=sm(ph(t,.06,.16))*(t<.32?MAX:DIM);
+  const g2=sm(ph(t,.28,.38))*(t<.52?MAX:DIM);
+  const g3=sm(ph(t,.48,.58))*(t<.72?MAX:DIM);
+  const g4=sm(ph(t,.68,.78))*MAX;
 
-  // Microvilli: left side — anchor below pore label with clear gap
-  leader_(CX-7,CELL_TOP-11,
-          CX-40,24,
-          'MICROVILLI',true);
+  leader_(CX-PORE_W/2+2,PORE_Y+5,  CX-40,10,  'TASTE PORE',true,g1);
+  leader_(CX-7,CELL_TOP-11,          CX-40,24,  'MICROVILLI',true,g1);
+  leader_(CX+MAIN_RX+1,CELL_TOP-1,  CX+MAIN_RX+30,CELL_TOP-14,'APICAL MEMBRANE',false,g2);
+  leader_(CX+MAIN_RX+1,REC_Y+REC_H/2,CX+MAIN_RX+30,REC_Y+REC_H/2+8,'RECEPTOR PROTEIN',false,g2);
 
-  // Apical membrane: right side
-  leader_(CX+MAIN_RX+1,CELL_TOP-1,
-          CX+MAIN_RX+30,CELL_TOP-14,
-          'APICAL MEMBRANE',false);
-
-  // Receptor protein: right side (offset below membrane label)
-  leader_(CX+MAIN_RX+1,REC_Y+REC_H/2,
-          CX+MAIN_RX+30,REC_Y+REC_H/2+8,
-          'RECEPTOR PROTEIN',false);
-
-  // ── CELL BODY LABELS (right side) ──
-  // Cell label — mid-body
   const cellLabelY=CELL_TOP+CELL_H*.30;
-  leader_(CX+cellRx(cellLabelY,MAIN_RX)+1,cellLabelY,
-          CX+MAIN_RX+30,cellLabelY,
-          'TASTE RECEPTOR CELL',false);
+  leader_(CX+cellRx(cellLabelY,MAIN_RX)+1,cellLabelY,CX+MAIN_RX+30,cellLabelY,'TASTE RECEPTOR CELL',false,g3);
+  leader_(CX+NUC_RX+1,NUC_CY,CX+MAIN_RX+30,NUC_CY,'NUCLEUS',false,g3*.55);
 
-  // Ca2+ cascade label — static position, fades in then stays
   if(cascadeWave>.12){
     const clAl=cl01((cascadeWave-.12)/.18);
     const fixY=CELL_TOP+Math.round(CELL_H*0.42);
-    leader_(CX-Math.round(cellRx(fixY,MAIN_RX))-1,fixY,
-            CX-42,fixY+4,
-            'Ca²⁺ wave',true,clAl*.85);
+    leader_(CX-Math.round(cellRx(fixY,MAIN_RX))-1,fixY,CX-42,fixY+4,'Ca²⁺ wave',true,clAl*.75);
     if(clAl>.15){
-      ctx.save();ctx.globalAlpha=clAl*.55;
+      ctx.save();ctx.globalAlpha=clAl*.48;
       ctx.font='7.5px system-ui';ctx.fillStyle=rgba(C.ca,.75);
-      ctx.textAlign='right';
-      ctx.fillText('intracellular signal',CX-45,fixY+14);
+      ctx.textAlign='right';ctx.fillText('intracellular signal',CX-45,fixY+14);
       ctx.textAlign='left';ctx.restore();
     }
   }
 
-  // Nucleus: right side
-  leader_(CX+NUC_RX+1,NUC_CY,
-          CX+MAIN_RX+30,NUC_CY,
-          'NUCLEUS',false);
-
-  // Nerve fiber: right side, lower
   const axMid=(AX_TOP+AX_BOT)/2;
-  leader_(CX+AX_W+1,axMid,
-          CX+MAIN_RX+30,axMid,
-          'NERVE FIBER',false);
+  leader_(CX+AX_W+1,axMid,  CX+MAIN_RX+30,axMid,  'NERVE FIBER',false,g4);
+  leader_(CX+ST_R+1,ST_CY,  CX+MAIN_RX+30,ST_CY+8,'SYNAPSE',false,g4);
 
-  // Synapse
-  leader_(CX+ST_R+1,ST_CY,
-          CX+MAIN_RX+30,ST_CY+8,
-          'SYNAPSE',false);
-
-  // ── ACTIVATED callout (right side, appears on binding) ──
   if(recAct>.25){
-    const fa=cl01((recAct-.25)/.28);
-    ctx.save();ctx.globalAlpha=fa;
-    ctx.font='bold 8.5px system-ui';ctx.fillStyle=rgb(C.recAct);
-    ctx.strokeStyle=rgba(C.recAct,.5);ctx.lineWidth=.9;
-    // leader from receptor right edge
-    const ry=REC_Y+REC_H*.4;
-    ctx.beginPath();ctx.moveTo(CX+REC_W/2+2,ry);ctx.lineTo(CX+MAIN_RX+30,ry-14);ctx.stroke();
-    ctx.textAlign='left';
-    ctx.fillText('activated!',CX+MAIN_RX+32,ry-11);
-    ctx.textAlign='left';ctx.restore();
+    const fa=cl01((recAct-.25)/.28)*(1-sm(ph(t,.60,.70)));
+    if(fa>.02){
+      ctx.save();ctx.globalAlpha=fa;
+      ctx.font='bold 8.5px system-ui';ctx.fillStyle=rgb(C.recAct);
+      ctx.strokeStyle=rgba(C.recAct,.5);ctx.lineWidth=.9;
+      const ry=REC_Y+REC_H*.4;
+      ctx.beginPath();ctx.moveTo(CX+REC_W/2+2,ry);ctx.lineTo(CX+MAIN_RX+30,ry-14);ctx.stroke();
+      ctx.fillText('activated!',CX+MAIN_RX+32,ry-11);
+      ctx.restore();
+    }
   }
 }
 
-// ── myelinated signal path ──────────────────────────────────────────
 function bPt(t,x0,y0,x1,y1,x2,y2){const u=1-t;return[u*u*x0+2*u*t*x1+t*t*x2,u*u*y0+2*u*t*y1+t*t*y2];}
 function bTan(t,x0,y0,x1,y1,x2,y2){return[2*(1-t)*(x1-x0)+2*t*(x2-x1),2*(1-t)*(y1-y0)+2*t*(y2-y1)];}
-const N_SH=14;
-const sheaths=[];
+const N_SH=14,sheaths=[];
 for(let i=0;i<N_SH;i++){
   const tc=(i+.5)/N_SH;
   const[px,py]=bPt(tc,SX,SY,SCX,SCY,SEX,SEY);
@@ -580,13 +421,13 @@ for(let i=0;i<N_SH;i++){
 const SEG_W=W/(N_SH*1.65);
 
 function drawSignal(t){
-  const p=eo3(ph(t,.73,.92));
+  const p=eo3(ph(t,.74,.93));
   if(p<=0)return;
   for(let i=0;i<N_SH;i++){
     const{px,py,angle}=sheaths[i];
     const segT=(i+.5)/N_SH;
-    const isAct=segT<=p;const isPulse=Math.abs(segT-p)<.06;
-    const al=isAct?.52:.10;const shW=SEG_W*.72,shH=9;
+    const isAct=segT<=p,isPulse=Math.abs(segT-p)<.06;
+    const al=isAct?.52:.10,shW=SEG_W*.72,shH=9;
     ctx.save();ctx.translate(px,py);ctx.rotate(angle);
     const shG=ctx.createLinearGradient(0,-shH,0,shH);
     const shC=isAct?C.recAct:C.ax;
@@ -607,70 +448,51 @@ function drawSignal(t){
   hg.addColorStop(0,rgba(C.sig,.88));hg.addColorStop(1,rgba(C.sig,0));
   ctx.fillStyle=hg;ctx.beginPath();ctx.arc(hx,hy,16,0,Math.PI*2);ctx.fill();
   ctx.fillStyle=rgb(C.sig);ctx.beginPath();ctx.arc(hx,hy,5,0,Math.PI*2);ctx.fill();
-
-  ctx.font='8.5px system-ui';ctx.fillStyle=rgba(C.lbl,.28);
-  ctx.fillText('gustatory nerve',412,278);
-  if(p>.04){ctx.font='bold 8.5px system-ui';ctx.fillStyle=rgba(C.sig,.78);ctx.fillText('nerve signal sent',282,278);}
-
-  // brain blob — dim ghost while nerve fires, fully lit on arrival
+  ctx.font='8.5px system-ui';ctx.fillStyle=rgba(C.lbl,.28);ctx.fillText('gustatory nerve',412,278);
+  if(p>.04){ctx.font='bold 8.5px system-ui';ctx.fillStyle=rgba(C.sig,.78);ctx.fillText('NERVE SIGNAL SENT',282,278);}
   const brainAlpha=p>.87?sm(cl01((p-.87)/.13)):(p>.05?.22:0);
-  if(brainAlpha>.01) drawBrain(brainAlpha);
+  if(brainAlpha>.01)drawBrain(brainAlpha);
 }
 
-// ── background ──────────────────────────────────────────────────────
 function drawBg(){
   const g=ctx.createRadialGradient(CX,H*.45,0,CX,H*.45,H*.88);
   g.addColorStop(0,rgb(C.bgG));g.addColorStop(1,rgb(C.bg));
   ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
 }
 
-// ── step mapping ─────────────────────────────────────────────────────
 function activeStep(t){
   if(t<.09)return -1;
-  if(t<.40)return 0;
-  if(t<.55)return 1;
-  if(t<.73)return 2;
-  if(t<.96)return 3;
+  if(t<.32)return 0;
+  if(t<.52)return 1;
+  if(t<.72)return 2;
+  if(t<.95)return 3;
   return -1;
 }
 
-// ── main render ──────────────────────────────────────────────────────
 function draw(t){
   drawBg();
-
-  const recAct=sm(ph(t,.40,.58));
-  const cascadeWave=sm(ph(t,.55,.73));
-  const atpAct=sm(ph(t,.68,.73));
-  const wobble=Math.sin(ph(t,.40,.52)*Math.PI*1.5)*sm(ph(t,.40,.44))*(1-sm(ph(t,.50,.55)));
-  const docked=ph(t,.40,.50)>=1;
+  const recAct=sm(ph(t,.34,.52));
+  const cascadeWave=sm(ph(t,.52,.72));
+  const synAct=sm(ph(t,.70,.77));
+  const wobble=Math.sin(ph(t,.34,.50)*Math.PI*1.5)*sm(ph(t,.34,.40))*(1-sm(ph(t,.48,.54)));
+  const docked=ph(t,.30,.42)>=1;
 
   drawBudOutline();
-
-  // Flanking cells (behind main)
   ctx.save();ctx.globalAlpha=.42;
-  drawTasteCell(FLNK2L,FLNK2_RX,C.flnk,1,0);
-  drawTasteCell(FLNK2R,FLNK2_RX,C.flnk,1,0);
+  drawTasteCell(FLNK2L,FLNK2_RX,C.flnk,1,0);drawTasteCell(FLNK2R,FLNK2_RX,C.flnk,1,0);
   ctx.restore();
   ctx.save();ctx.globalAlpha=.58;
-  drawTasteCell(FLNK1L,FLNK1_RX,C.flnk,1,0);
-  drawTasteCell(FLNK1R,FLNK1_RX,C.flnk,1,0);
+  drawTasteCell(FLNK1L,FLNK1_RX,C.flnk,1,0);drawTasteCell(FLNK1R,FLNK1_RX,C.flnk,1,0);
   ctx.restore();
 
-  // Main cell (with cascade wave)
   drawTasteCell(CX,MAIN_RX,C.main,1,cascadeWave);
   drawNucleus();
-  drawAxon(atpAct);
-  drawATPRelease(atpAct);
-
-  // Epithelium on top (covers cell tops, shows pore gap)
+  drawAxon(synAct);
   drawEpithelium();
-
-  // Microvilli through the pore
   drawMicrovilli(recAct);
-
-  const docking=drawMolecule(t);
+  drawMolecule(t);
   drawReceptor(recAct,docked,wobble);
-  drawLabels(recAct,cascadeWave);
+  drawLabels(t,recAct,cascadeWave);
   drawSignal(t);
   drawTongueInset(t);
 
@@ -678,9 +500,8 @@ function draw(t){
     document.getElementById(id).classList.toggle('active',i===activeStep(t)));
 }
 
-// ── loop ─────────────────────────────────────────────────────────────
 let t=0,running=true,lastTs=null;
-const CYCLE=10200;
+const CYCLE=13000;
 function loop(ts){
   if(!running)return;
   if(lastTs!==null)t=(t+(ts-lastTs)/CYCLE)%1;
@@ -688,22 +509,16 @@ function loop(ts){
 }
 const btnPlay=document.getElementById('btn-play');
 document.getElementById('btn-restart').addEventListener('click',()=>{
-  t=0;lastTs=null;
-  if(!running){running=true;btnPlay.textContent='Pause';requestAnimationFrame(loop);}
+  t=0;lastTs=null;if(!running){running=true;btnPlay.textContent='Pause';requestAnimationFrame(loop);}
 });
-function togglePlay(){
-  running=!running;btnPlay.textContent=running?'Pause':'Play';
-  if(running){lastTs=null;requestAnimationFrame(loop);}
-}
+function togglePlay(){running=!running;btnPlay.textContent=running?'Pause':'Play';if(running){lastTs=null;requestAnimationFrame(loop);}}
 btnPlay.addEventListener('click',togglePlay);
 document.getElementById('cvs').addEventListener('click',togglePlay);
-const STEP_T=[0.36,0.52,0.70,0.90];
+const STEP_T=[0.20,0.40,0.60,0.80];
 ['s0','s1','s2','s3'].forEach((id,i)=>{
   document.getElementById(id).addEventListener('click',e=>{
-    e.stopPropagation();
-    t=STEP_T[i];lastTs=null;
-    if(running){running=false;btnPlay.textContent='Play';}
-    draw(t);
+    e.stopPropagation();t=STEP_T[i];lastTs=null;
+    if(running){running=false;btnPlay.textContent='Play';}draw(t);
   });
 });
 running=false;btnPlay.textContent='Play';draw(0);
