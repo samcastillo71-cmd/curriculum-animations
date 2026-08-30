@@ -248,26 +248,64 @@ function drawResults(resultT){
   const bw=CW*2+104; // 240px — wide enough for all text
   // Left callout
   ctx.globalAlpha=resultT;
-  ctx.fillStyle=rgba([62,12,30],.65);ctx.beginPath();ctx.roundRect(LGX-52,by,bw,96,5);ctx.fill();
+  const chipW=bw-18;
+  ctx.fillStyle=rgba([62,12,30],.65);ctx.beginPath();ctx.roundRect(LGX-52,by,bw,104,5);ctx.fill();
   ctx.strokeStyle=rgba(AC.Xc,.45);ctx.lineWidth=.8;ctx.stroke();
   ctx.font='bold 11px system-ui';ctx.fillStyle=rgba(AC.Xc,.90);
-  ctx.textAlign='center';ctx.fillText('Sons have just 1 X chromosome.',LGX+CW,by+17);
-  ctx.font='10px system-ui';ctx.fillStyle=rgba(LBL,.55);
-  ctx.fillText('Inherit Xᶜ from mom? No backup allele.',LGX+CW,by+34);
-  ctx.fillText('No second copy to override it.',LGX+CW,by+51);
-  ctx.fillText('→ 50% of sons are colorblind.',LGX+CW,by+68);
+  ctx.textAlign='center';ctx.fillText('Sons have only 1 X chromosome.',LGX+CW,by+16);
+  ctx.font='10px system-ui';ctx.fillStyle=rgba(LBL,.55);ctx.textAlign='left';
+  const llx=LGX-42;
+  ctx.fillText('– Inherit Xᶜ from mom? No backup copy.',llx,by+31);
+  ctx.fillText('– No second allele can override it.',llx,by+46);
+  ctx.strokeStyle=rgba(AC.Xc,.18);ctx.lineWidth=.7;
+  ctx.beginPath();ctx.moveTo(LGX-46,by+54);ctx.lineTo(LGX+CW*2+46,by+54);ctx.stroke();
+  ctx.fillStyle=rgba(AC.Xc,.16);ctx.beginPath();ctx.roundRect(LGX-43,by+58,chipW,26,4);ctx.fill();
+  ctx.strokeStyle=rgba(AC.Xc,.38);ctx.lineWidth=.8;ctx.stroke();
+  ctx.font='bold 10px system-ui';ctx.fillStyle=rgba(AC.Xc,.92);
+  ctx.textAlign='center';ctx.fillText('50% chance per son of colorblindness',LGX+CW,by+75);
 
   // Right callout
-  ctx.fillStyle=rgba([52,30,8],.65);ctx.beginPath();ctx.roundRect(RGX-52,by,bw,96,5);ctx.fill();
+  ctx.fillStyle=rgba([52,30,8],.65);ctx.beginPath();ctx.roundRect(RGX-52,by,bw,104,5);ctx.fill();
   ctx.strokeStyle=rgba(AC.b,.45);ctx.lineWidth=.8;ctx.stroke();
-  ctx.font='bold 11px system-ui';ctx.fillStyle=rgba(AC.b,.90);
-  ctx.fillText('Every child gets 2 copies.',RGX+CW,by+17);
-  ctx.font='10px system-ui';ctx.fillStyle=rgba(LBL,.55);
-  ctx.fillText('Need bb to show the trait.',RGX+CW,by+34);
-  ctx.fillText('All children equally at risk.',RGX+CW,by+51);
-  ctx.fillText('→ 25% of all children',RGX+CW,by+68);
-  ctx.fillText('show the recessive trait.',RGX+CW,by+82);
+  ctx.font='bold 11px system-ui';ctx.fillStyle=rgba(AC.b,.90);ctx.textAlign='center';
+  ctx.fillText('Every child gets 2 allele copies.',RGX+CW,by+16);
+  ctx.font='10px system-ui';ctx.fillStyle=rgba(LBL,.55);ctx.textAlign='left';
+  const rlx=RGX-42;
+  ctx.fillText('– Must inherit bb to show the trait.',rlx,by+31);
+  ctx.fillText('– Boys and girls are equally at risk.',rlx,by+46);
+  ctx.strokeStyle=rgba(AC.b,.18);ctx.lineWidth=.7;
+  ctx.beginPath();ctx.moveTo(RGX-46,by+54);ctx.lineTo(RGX+CW*2+46,by+54);ctx.stroke();
+  ctx.fillStyle=rgba(AC.b,.16);ctx.beginPath();ctx.roundRect(RGX-43,by+58,chipW,26,4);ctx.fill();
+  ctx.strokeStyle=rgba(AC.b,.38);ctx.lineWidth=.8;ctx.stroke();
+  ctx.font='bold 10px system-ui';ctx.fillStyle=rgba(AC.b,.92);
+  ctx.textAlign='center';ctx.fillText('25% chance per child of the trait',RGX+CW,by+75);
 
+  ctx.textAlign='left';ctx.restore();
+}
+
+function drawKey(resultT){
+  if(resultT<=0.02)return;
+  ctx.save();ctx.globalAlpha=resultT*.82;
+  const kx=374,ky=255,kw=106,kh=90;
+  ctx.fillStyle=rgba([12,18,32],.72);
+  ctx.beginPath();ctx.roundRect(kx-kw/2,ky,kw,kh,4);ctx.fill();
+  ctx.strokeStyle=rgba(LBL,.20);ctx.lineWidth=.8;ctx.stroke();
+  ctx.font='bold 7.5px system-ui';ctx.fillStyle=rgba(LBL,.64);
+  ctx.textAlign='center';ctx.fillText('ALLELE KEY',kx,ky+12);
+  const tx=kx-kw/2+6,lh=12;let ty=ky+25;
+  ctx.font='8px system-ui';ctx.textAlign='left';
+  ctx.fillStyle=rgba(AC.XN,.92);ctx.fillText('XN',tx,ty);
+  ctx.fillStyle=rgba(LBL,.58);ctx.fillText('= normal vision',tx+18,ty);ty+=lh;
+  ctx.fillStyle=rgba(AC.Xc,.92);ctx.fillText('Xc',tx,ty);
+  ctx.fillStyle=rgba(LBL,.58);ctx.fillText('= colorblind allele',tx+18,ty);ty+=lh;
+  ctx.fillStyle=rgba(AC.Y,.82);ctx.fillText('Y',tx,ty);
+  ctx.fillStyle=rgba(LBL,.58);ctx.fillText('= Y chromosome',tx+11,ty);ty+=lh+4;
+  ctx.strokeStyle=rgba(LBL,.16);ctx.lineWidth=.7;
+  ctx.beginPath();ctx.moveTo(tx,ty-3);ctx.lineTo(kx+kw/2-6,ty-3);ctx.stroke();
+  ctx.fillStyle=rgba(AC.B,.92);ctx.fillText('B',tx,ty);
+  ctx.fillStyle=rgba(LBL,.58);ctx.fillText('= dominant allele',tx+11,ty);ty+=lh;
+  ctx.fillStyle=rgba(AC.b,.92);ctx.fillText('b',tx,ty);
+  ctx.fillStyle=rgba(LBL,.58);ctx.fillText('= recessive allele',tx+11,ty);
   ctx.textAlign='left';ctx.restore();
 }
 
@@ -319,6 +357,7 @@ function draw(t){
   }
 
   drawResults(resultT);
+  drawKey(resultT);
 
   ['s0','s1','s2','s3'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',i===activeStep(t)));
 }
