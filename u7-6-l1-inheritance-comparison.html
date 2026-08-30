@@ -1,4 +1,4 @@
-﻿<title>Sex-Linked vs Autosomal</title>
+﻿<title>X-Linked vs Autosomal</title>
 <style>
   :root{--bg:#EDE6EA;--card:#FFFFFF;--text:#1A0812;--muted:#70566A;--accent:#6B1738;--step-bg:#DDD4DA;--step-active:#6B1738;--step-act-text:#FFFFFF;--btn-sec:#DDD4DA;--btn-sec-text:#5A3848;}
   @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0D0408;--card:#180810;--text:#E8D4DE;--muted:#886878;--accent:#CC3060;--step-bg:#220C16;--step-active:#CC3060;--step-act-text:#0D0408;--btn-sec:#220C16;--btn-sec-text:#886878;}}
@@ -21,7 +21,7 @@
   button.sec{background:var(--btn-sec);color:var(--btn-sec-text)}
 </style>
 <header>
-  <h1>Unit 7.6 &middot; L1 &mdash; Sex-Linked vs. Autosomal Inheritance</h1>
+  <h1>Unit 7.6 &middot; L1 &mdash; X-Linked vs. Autosomal Inheritance</h1>
   <p class="subtitle">Why colorblindness affects sons more than daughters</p>
 </header>
 <div class="card">
@@ -121,7 +121,7 @@ function drawGrid(gx,cells,gridT){
   ctx.save();ctx.globalAlpha=gridT;
   cells.forEach(cell=>{
     const x=gx+cell.c*CW,y=GY+cell.r*CH;
-    ctx.fillStyle=rgba(CELL_BG[cell.type],.88);
+    ctx.fillStyle=rgba([18,22,34],.82);
     ctx.beginPath();ctx.roundRect(x+1,y+1,CW-2,CH-2,3);ctx.fill();
   });
   ctx.strokeStyle=rgba([55,78,118],.50);ctx.lineWidth=1.4;
@@ -154,6 +154,11 @@ function drawCellFill(gx,rowHdrs,colHdrs,cells,fillT){
   cells.forEach(cell=>{
     const fa=sm(cl01((fillT-cell.stagger)/.26));
     if(fa<=0)return;
+    const x=gx+cell.c*CW,y=GY+cell.r*CH;
+    ctx.save();ctx.globalAlpha=fa*.88;
+    ctx.fillStyle=rgba(CELL_BG[cell.type],.88);
+    ctx.beginPath();ctx.roundRect(x+1,y+1,CW-2,CH-2,3);ctx.fill();
+    ctx.restore();
     const cx=gx+cell.c*CW+CW/2,cy=GY+cell.r*CH+CH/2;
     const mx=lerp(rowHdrs[cell.r].cx+16,cx-7,sm(fa));
     const my=lerp(rowHdrs[cell.r].cy,cy,sm(fa));
@@ -259,7 +264,7 @@ function drawResults(resultT){
   ctx.fillText('Every child gets 2 copies.',RGX+CW,by+17);
   ctx.font='10px system-ui';ctx.fillStyle=rgba(LBL,.55);
   ctx.fillText('Need bb to show the trait.',RGX+CW,by+34);
-  ctx.fillText('Both sexes equally at risk.',RGX+CW,by+51);
+  ctx.fillText('All children equally at risk.',RGX+CW,by+51);
   ctx.fillText('→ 25% of all children',RGX+CW,by+68);
   ctx.fillText('show the recessive trait.',RGX+CW,by+82);
 
