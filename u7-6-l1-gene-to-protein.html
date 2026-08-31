@@ -278,16 +278,10 @@ const _ribSmBdr=rgba(C.ribSm.map(v=>Math.round(v*.5)),.50);
 const _protCols=C.prot.map(col=>rgba(col,.92));
 
 let t=0,running=true,lastTs=null;
-const MAX_DELTA=80; // cap time-delta to prevent stage jumps on tab-switch / hiccup
-const TARGET_MS=1000/30; // 30fps ceiling — animation is slow enough that 30fps is imperceptible
-let _frameDue=0;
 function loop(ts){
   if(!running)return;
-  requestAnimationFrame(loop);
-  if(ts<_frameDue)return;
-  _frameDue=ts+TARGET_MS-4;
-  if(lastTs!==null){const dt=Math.min(ts-lastTs,MAX_DELTA);t=(t+dt/CYCLE)%1;}
-  lastTs=ts;draw(t);
+  if(lastTs!==null){const dt=Math.min(ts-lastTs,100);t=(t+dt/CYCLE)%1;}
+  lastTs=ts;draw(t);requestAnimationFrame(loop);
 }
 const btnPlay=document.getElementById('btn-play');
 document.getElementById('btn-restart').addEventListener('click',()=>{t=0;lastTs=null;if(!running){running=true;btnPlay.textContent='Pause';requestAnimationFrame(loop);}});
