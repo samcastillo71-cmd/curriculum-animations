@@ -67,7 +67,7 @@ const L_CELLS=[
   {r:1,c:1,mom:'Xc',dad:'Y', pheno:'Colorblind ♂',type:'colorblind',stagger:0.15, front:'mom'},
 ];
 // Parent allele starts (left side)
-const LM_XN={x:55,y:126},LM_XC={x:75,y:126};
+const LM_XN={x:55,y:126},LM_XC={x:83,y:126};
 const LD_XN={x:138,y:74}, LD_Y= {x:182,y:74};
 
 // RIGHT grid (Autosomal): GX=452
@@ -80,7 +80,7 @@ const R_CELLS=[
   {r:1,c:0,mom:'b',dad:'B',pheno:'Carrier',  type:'carrier', stagger:0.10, front:'dad'},
   {r:1,c:1,mom:'b',dad:'b',pheno:'Recessive',type:'affected',stagger:0.15},
 ];
-const RM_B={x:415,y:126},RM_b={x:435,y:126};
+const RM_B={x:415,y:126},RM_b={x:443,y:126};
 const RD_B={x:498,y:74}, RD_b={x:542,y:74};
 
 const CYCLE=13000;
@@ -192,10 +192,10 @@ function drawSideLabels(appear){
   ctx.font='10px system-ui';ctx.fillStyle=rgba(LBL,.30);
   ctx.fillText("dad's gametes",(L_COL[0].cx+L_COL[1].cx)/2,63);
   ctx.fillText("dad's gametes",(R_COL[0].cx+R_COL[1].cx)/2,63);
-  // mom's gametes — vertical rotated labels flanking the grids
+  // mom's gametes — two-line label centered above starting pill positions
   ctx.font='9px system-ui';ctx.fillStyle=rgba(LBL,.30);ctx.textAlign='center';
-  ctx.save();ctx.translate(22,180);ctx.rotate(-Math.PI/2);ctx.fillText("mom's gametes",0,4);ctx.restore();
-  ctx.save();ctx.translate(413,180);ctx.rotate(-Math.PI/2);ctx.fillText("mom's gametes",0,4);ctx.restore();
+  ctx.fillText("mom's",69,108);ctx.fillText("gametes",69,119);
+  ctx.fillText("mom's",429,108);ctx.fillText("gametes",429,119);
   // Center divider at x=340 (canvas center = gap center with symmetric grids)
   ctx.strokeStyle=rgba(LBL,.14);ctx.lineWidth=1;ctx.setLineDash([4,6]);
   ctx.beginPath();ctx.moveTo(340,48);ctx.lineTo(340,148);ctx.stroke();
