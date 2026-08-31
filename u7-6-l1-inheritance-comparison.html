@@ -56,10 +56,10 @@ const LBL=[172,204,232];
 // Shared cell geometry
 const GY=120,CW=68,CH=60;
 
-// LEFT grid (X-linked): GX=126
-const LGX=126;
+// LEFT grid (X-linked): GX=92
+const LGX=92;
 const L_COL=[{cx:LGX+CW/2,cy:86},{cx:LGX+3*CW/2,cy:86}];
-const L_ROW=[{cx:88,cy:GY+CH/2},{cx:88,cy:GY+3*CH/2}];
+const L_ROW=[{cx:54,cy:GY+CH/2},{cx:54,cy:GY+3*CH/2}];
 const L_CELLS=[
   {r:0,c:0,mom:'XN',dad:'XN',pheno:'Normal ♀',    type:'normal',    stagger:0},
   {r:0,c:1,mom:'XN',dad:'Y', pheno:'Normal ♂',    type:'normal',    stagger:0.05, front:'mom'},
@@ -67,21 +67,21 @@ const L_CELLS=[
   {r:1,c:1,mom:'Xc',dad:'Y', pheno:'Colorblind ♂',type:'colorblind',stagger:0.15, front:'mom'},
 ];
 // Parent allele starts (left side)
-const LM_XN={x:46,y:152},LM_XC={x:46,y:172};
-const LD_XN={x:154,y:30}, LD_Y= {x:210,y:30};
+const LM_XN={x:20,y:152},LM_XC={x:20,y:172};
+const LD_XN={x:120,y:30}, LD_Y= {x:176,y:30};
 
-// RIGHT grid (Autosomal): GX=486
-const RGX=486;
+// RIGHT grid (Autosomal): GX=452
+const RGX=452;
 const R_COL=[{cx:RGX+CW/2,cy:86},{cx:RGX+3*CW/2,cy:86}];
-const R_ROW=[{cx:448,cy:GY+CH/2},{cx:448,cy:GY+3*CH/2}];
+const R_ROW=[{cx:414,cy:GY+CH/2},{cx:414,cy:GY+3*CH/2}];
 const R_CELLS=[
   {r:0,c:0,mom:'B',dad:'B',pheno:'Dominant', type:'normal',  stagger:0},
   {r:0,c:1,mom:'B',dad:'b',pheno:'Carrier',  type:'carrier', stagger:0.05, front:'mom'},
   {r:1,c:0,mom:'b',dad:'B',pheno:'Carrier',  type:'carrier', stagger:0.10, front:'dad'},
   {r:1,c:1,mom:'b',dad:'b',pheno:'Recessive',type:'affected',stagger:0.15},
 ];
-const RM_B={x:408,y:152},RM_b={x:408,y:172};
-const RD_B={x:514,y:30}, RD_b={x:570,y:30};
+const RM_B={x:420,y:100},RM_b={x:420,y:116};
+const RD_B={x:480,y:30}, RD_b={x:536,y:30};
 
 const CYCLE=13000;
 
@@ -194,16 +194,15 @@ function drawSideLabels(appear){
   ctx.fillText("dad's gametes",(R_COL[0].cx+R_COL[1].cx)/2,63);
   // mom's gametes — centered above row header pills, between col-headers and grid
   ctx.textAlign='center';
-  ctx.fillText("mom's gametes",88,GY-10);
-  ctx.fillText("mom's gametes",448,GY-10);
-  // Center divider — two segments leaving a gap for the key (y=148–244)
-  // x=374 = true center of gap between grids (LGX+2*CW=262, RGX=486)
+  ctx.fillText("mom's gametes",54,GY-10);
+  ctx.fillText("mom's gametes",414,GY-10);
+  // Center divider at x=340 (canvas center = gap center with symmetric grids)
   ctx.strokeStyle=rgba(LBL,.14);ctx.lineWidth=1;ctx.setLineDash([4,6]);
-  ctx.beginPath();ctx.moveTo(374,48);ctx.lineTo(374,148);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(374,244);ctx.lineTo(374,300);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(340,48);ctx.lineTo(340,148);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(340,244);ctx.lineTo(340,300);ctx.stroke();
   ctx.setLineDash([]);
   ctx.font='bold 14px system-ui';ctx.fillStyle=rgba(LBL,.28);
-  ctx.textAlign='center';ctx.fillText('vs.',374,152);
+  ctx.textAlign='center';ctx.fillText('vs.',340,152);
   ctx.textAlign='left';ctx.restore();
 }
 
@@ -286,7 +285,7 @@ function drawResults(resultT){
 function drawKey(appear){
   if(appear<=0.02)return;
   ctx.save();ctx.globalAlpha=appear*.82;
-  const kx=374,ky=160,kw=128,kh=82;
+  const kx=340,ky=160,kw=128,kh=82;
   // Solid background to cover center divider line
   ctx.fillStyle=rgba([10,16,28],.92);
   ctx.beginPath();ctx.roundRect(kx-kw/2,ky,kw,kh,4);ctx.fill();
