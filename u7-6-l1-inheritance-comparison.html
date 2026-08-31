@@ -10,7 +10,7 @@
   .subtitle{font-size:.82rem;color:var(--muted)}
   .card{background:var(--card);border-radius:16px;padding:1.125rem 1.125rem 1rem;box-shadow:0 2px 20px rgba(0,0,0,.10),0 1px 4px rgba(0,0,0,.06);max-width:1080px;width:100%;display:flex;flex-direction:column;gap:.875rem}
   canvas{border-radius:10px;display:block;width:100%;height:auto;cursor:pointer}
-  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem}
+  .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:.4rem}
   @media(max-width:500px){.steps{grid-template-columns:repeat(2,1fr)}}
   .step{padding:.45rem .5rem;border-radius:7px;font-size:.88rem;font-weight:500;text-align:center;background:var(--step-bg);color:var(--muted);transition:background .35s,color .35s;line-height:1.35;cursor:pointer;user-select:none}
   .step.active{background:var(--step-active);color:var(--step-act-text);font-weight:600}
@@ -27,10 +27,9 @@
 <div class="card">
   <canvas id="cvs"></canvas>
   <div class="steps">
-    <div class="step" id="s0"><span class="step-num">STEP 1</span>Two types of traits</div>
-    <div class="step" id="s1"><span class="step-num">STEP 2</span>Gametes separate</div>
-    <div class="step" id="s2"><span class="step-num">STEP 3</span>Both squares fill</div>
-    <div class="step" id="s3"><span class="step-num">STEP 4</span>The pattern difference</div>
+    <div class="step" id="s0"><span class="step-num">STEP 1</span>Gametes separate</div>
+    <div class="step" id="s1"><span class="step-num">STEP 2</span>Both squares fill</div>
+    <div class="step" id="s2"><span class="step-num">STEP 3</span>The pattern difference</div>
   </div>
   <div class="controls">
     <button id="btn-play">Pause</button>
@@ -313,11 +312,10 @@ function drawKey(appear){
 }
 
 function activeStep(t){
-  if(t<.08)return -1;
-  if(t<.26)return 0;
-  if(t<.48)return 1;
-  if(t<.72)return 2;
-  if(t<.95)return 3;
+  if(t<.26)return -1;
+  if(t<.48)return 0;
+  if(t<.72)return 1;
+  if(t<.95)return 2;
   return -1;
 }
 
@@ -362,7 +360,7 @@ function draw(t){
   drawResults(resultT);
   drawKey(appear);
 
-  ['s0','s1','s2','s3'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',i===activeStep(t)));
+  ['s0','s1','s2'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',i===activeStep(t)));
 }
 
 let t=0,running=true,lastTs=null;
@@ -376,8 +374,8 @@ document.getElementById('btn-restart').addEventListener('click',()=>{t=0;lastTs=
 function togglePlay(){running=!running;btnPlay.textContent=running?'Pause':'Play';if(running){lastTs=null;requestAnimationFrame(loop);}}
 btnPlay.addEventListener('click',togglePlay);
 document.getElementById('cvs').addEventListener('click',togglePlay);
-const STEP_T=[0.22,0.46,0.70,0.88];
-['s0','s1','s2','s3'].forEach((id,i)=>{
+const STEP_T=[0.46,0.70,0.88];
+['s0','s1','s2'].forEach((id,i)=>{
   document.getElementById(id).addEventListener('click',e=>{
     e.stopPropagation();
     t=STEP_T[i];lastTs=null;
