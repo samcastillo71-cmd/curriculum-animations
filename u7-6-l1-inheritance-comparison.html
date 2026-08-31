@@ -185,25 +185,25 @@ function drawCellFill(gx,rowHdrs,colHdrs,cells,fillT){
 
 function drawSideLabels(appear){
   ctx.save();ctx.globalAlpha=appear;
-  // Side titles — sit above the dad pills at y=30, clear at y=10
   ctx.textAlign='center';
   ctx.font='bold 12px system-ui';ctx.fillStyle=rgba(AC.XN,.70);
   ctx.fillText('X-LINKED TRAIT',LGX+CW,12);
   ctx.font='bold 12px system-ui';ctx.fillStyle=rgba(AC.B,.70);
   ctx.fillText('AUTOSOMAL TRAIT',RGX+CW,12);
-  // dad's / mom's orientation labels at header positions
   ctx.font='10px system-ui';ctx.fillStyle=rgba(LBL,.30);
   ctx.fillText("dad's gametes",(L_COL[0].cx+L_COL[1].cx)/2,63);
   ctx.fillText("dad's gametes",(R_COL[0].cx+R_COL[1].cx)/2,63);
-  ctx.textAlign='right';
-  ctx.fillText("mom's gametes",L_ROW[0].cx-6,L_ROW[0].cy-16);
-  ctx.fillText("mom's gametes",R_ROW[0].cx-6,R_ROW[0].cy-16);
-  // Center divider
+  // mom's gametes — centered above row header pills, between col-headers and grid
+  ctx.textAlign='center';
+  ctx.fillText("mom's gametes",88,GY-10);
+  ctx.fillText("mom's gametes",448,GY-10);
+  // Center divider — two segments leaving a gap for the key (y=148–244)
   ctx.strokeStyle=rgba(LBL,.14);ctx.lineWidth=1;ctx.setLineDash([4,6]);
-  ctx.beginPath();ctx.moveTo(340,48);ctx.lineTo(340,300);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(340,48);ctx.lineTo(340,148);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(340,244);ctx.lineTo(340,300);ctx.stroke();
   ctx.setLineDash([]);
   ctx.font='bold 14px system-ui';ctx.fillStyle=rgba(LBL,.28);
-  ctx.textAlign='center';ctx.fillText('vs.',340,185);
+  ctx.textAlign='center';ctx.fillText('vs.',340,152);
   ctx.textAlign='left';ctx.restore();
 }
 
@@ -249,59 +249,62 @@ function drawResults(resultT){
   // Left callout
   ctx.globalAlpha=resultT;
   const chipW=bw-18;
-  ctx.fillStyle=rgba([62,12,30],.65);ctx.beginPath();ctx.roundRect(LGX-52,by,bw,104,5);ctx.fill();
+  ctx.fillStyle=rgba([62,12,30],.65);ctx.beginPath();ctx.roundRect(LGX-52,by,bw,90,5);ctx.fill();
   ctx.strokeStyle=rgba(AC.Xc,.45);ctx.lineWidth=.8;ctx.stroke();
   ctx.font='bold 11px system-ui';ctx.fillStyle=rgba(AC.Xc,.90);
   ctx.textAlign='center';ctx.fillText('Sons have only 1 X chromosome.',LGX+CW,by+16);
   ctx.font='10px system-ui';ctx.fillStyle=rgba(LBL,.55);ctx.textAlign='left';
   const llx=LGX-42;
-  ctx.fillText('– Inherit Xᶜ from mom? No backup copy.',llx,by+31);
-  ctx.fillText('– No second allele can override it.',llx,by+46);
+  ctx.fillText('– Inherit Xᶜ from mom? No backup copy.',llx,by+30);
+  ctx.fillText('– No second allele can override it.',llx,by+44);
   ctx.strokeStyle=rgba(AC.Xc,.18);ctx.lineWidth=.7;
-  ctx.beginPath();ctx.moveTo(LGX-46,by+54);ctx.lineTo(LGX+CW*2+46,by+54);ctx.stroke();
-  ctx.fillStyle=rgba(AC.Xc,.16);ctx.beginPath();ctx.roundRect(LGX-43,by+58,chipW,26,4);ctx.fill();
+  ctx.beginPath();ctx.moveTo(LGX-46,by+50);ctx.lineTo(LGX+CW*2+46,by+50);ctx.stroke();
+  ctx.fillStyle=rgba(AC.Xc,.16);ctx.beginPath();ctx.roundRect(LGX-43,by+54,chipW,26,4);ctx.fill();
   ctx.strokeStyle=rgba(AC.Xc,.38);ctx.lineWidth=.8;ctx.stroke();
-  ctx.font='bold 10px system-ui';ctx.fillStyle=rgba(AC.Xc,.92);
-  ctx.textAlign='center';ctx.fillText('50% chance per son of colorblindness',LGX+CW,by+75);
+  ctx.font='bold 9px system-ui';ctx.fillStyle=rgba(AC.Xc,.92);
+  ctx.textAlign='center';ctx.fillText('50% chance per son to have colorblindness',LGX+CW,by+70);
 
   // Right callout
-  ctx.fillStyle=rgba([52,30,8],.65);ctx.beginPath();ctx.roundRect(RGX-52,by,bw,104,5);ctx.fill();
+  ctx.fillStyle=rgba([52,30,8],.65);ctx.beginPath();ctx.roundRect(RGX-52,by,bw,90,5);ctx.fill();
   ctx.strokeStyle=rgba(AC.b,.45);ctx.lineWidth=.8;ctx.stroke();
   ctx.font='bold 11px system-ui';ctx.fillStyle=rgba(AC.b,.90);ctx.textAlign='center';
   ctx.fillText('Every child gets 2 allele copies.',RGX+CW,by+16);
   ctx.font='10px system-ui';ctx.fillStyle=rgba(LBL,.55);ctx.textAlign='left';
   const rlx=RGX-42;
-  ctx.fillText('– Must inherit bb to show the trait.',rlx,by+31);
-  ctx.fillText('– Boys and girls are equally at risk.',rlx,by+46);
+  ctx.fillText('– Must inherit bb to show the trait.',rlx,by+30);
+  ctx.fillText('– Boys and girls are equally at risk.',rlx,by+44);
   ctx.strokeStyle=rgba(AC.b,.18);ctx.lineWidth=.7;
-  ctx.beginPath();ctx.moveTo(RGX-46,by+54);ctx.lineTo(RGX+CW*2+46,by+54);ctx.stroke();
-  ctx.fillStyle=rgba(AC.b,.16);ctx.beginPath();ctx.roundRect(RGX-43,by+58,chipW,26,4);ctx.fill();
+  ctx.beginPath();ctx.moveTo(RGX-46,by+50);ctx.lineTo(RGX+CW*2+46,by+50);ctx.stroke();
+  ctx.fillStyle=rgba(AC.b,.16);ctx.beginPath();ctx.roundRect(RGX-43,by+54,chipW,26,4);ctx.fill();
   ctx.strokeStyle=rgba(AC.b,.38);ctx.lineWidth=.8;ctx.stroke();
-  ctx.font='bold 10px system-ui';ctx.fillStyle=rgba(AC.b,.92);
-  ctx.textAlign='center';ctx.fillText('25% chance per child of the trait',RGX+CW,by+75);
+  ctx.font='bold 9px system-ui';ctx.fillStyle=rgba(AC.b,.92);
+  ctx.textAlign='center';ctx.fillText('25% chance per child to have the trait',RGX+CW,by+70);
 
   ctx.textAlign='left';ctx.restore();
 }
 
-function drawKey(resultT){
-  if(resultT<=0.02)return;
-  ctx.save();ctx.globalAlpha=resultT*.82;
-  const kx=374,ky=255,kw=106,kh=90;
-  ctx.fillStyle=rgba([12,18,32],.72);
+function drawKey(appear){
+  if(appear<=0.02)return;
+  ctx.save();ctx.globalAlpha=appear*.82;
+  const kx=340,ky=160,kw=156,kh=82;
+  // Solid background to cover center divider line
+  ctx.fillStyle=rgba([10,16,28],.92);
   ctx.beginPath();ctx.roundRect(kx-kw/2,ky,kw,kh,4);ctx.fill();
-  ctx.strokeStyle=rgba(LBL,.20);ctx.lineWidth=.8;ctx.stroke();
+  ctx.strokeStyle=rgba(LBL,.22);ctx.lineWidth=.8;ctx.stroke();
   ctx.font='bold 7.5px system-ui';ctx.fillStyle=rgba(LBL,.64);
-  ctx.textAlign='center';ctx.fillText('ALLELE KEY',kx,ky+12);
-  const tx=kx-kw/2+6,lh=12;let ty=ky+25;
+  ctx.textAlign='center';ctx.fillText('ALLELE KEY',kx,ky+13);
+  const tx=kx-kw/2+8,lh=12;let ty=ky+27;
   ctx.font='8px system-ui';ctx.textAlign='left';
   ctx.fillStyle=rgba(AC.XN,.92);ctx.fillText('XN',tx,ty);
   ctx.fillStyle=rgba(LBL,.58);ctx.fillText('= normal vision',tx+18,ty);ty+=lh;
   ctx.fillStyle=rgba(AC.Xc,.92);ctx.fillText('Xc',tx,ty);
   ctx.fillStyle=rgba(LBL,.58);ctx.fillText('= colorblind allele',tx+18,ty);ty+=lh;
   ctx.fillStyle=rgba(AC.Y,.82);ctx.fillText('Y',tx,ty);
-  ctx.fillStyle=rgba(LBL,.58);ctx.fillText('= Y chromosome',tx+11,ty);ty+=lh+4;
+  ctx.fillStyle=rgba(LBL,.58);ctx.fillText('= Y chromosome',tx+11,ty);
+  // Separator drawn at Y baseline + 4px gap, then 8px gap before B
   ctx.strokeStyle=rgba(LBL,.16);ctx.lineWidth=.7;
-  ctx.beginPath();ctx.moveTo(tx,ty-3);ctx.lineTo(kx+kw/2-6,ty-3);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(tx,ty+4);ctx.lineTo(kx+kw/2-8,ty+4);ctx.stroke();
+  ty+=14;
   ctx.fillStyle=rgba(AC.B,.92);ctx.fillText('B',tx,ty);
   ctx.fillStyle=rgba(LBL,.58);ctx.fillText('= dominant allele',tx+11,ty);ty+=lh;
   ctx.fillStyle=rgba(AC.b,.92);ctx.fillText('b',tx,ty);
@@ -357,7 +360,7 @@ function draw(t){
   }
 
   drawResults(resultT);
-  drawKey(resultT);
+  drawKey(appear);
 
   ['s0','s1','s2','s3'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',i===activeStep(t)));
 }

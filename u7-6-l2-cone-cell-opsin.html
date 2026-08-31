@@ -521,6 +521,9 @@ function drawNeuron(t){
     ctx.fillStyle=rgb(C.sig);ctx.beginPath();ctx.arc(hx,hy,4.5,0,Math.PI*2);ctx.fill();
   }
 
+  // Static nerve label (always shown once neuron draws)
+  ctx.font='8.5px system-ui';ctx.fillStyle=rgba(C.lbl,.28);
+  ctx.fillText('OPTIC NERVE',368,282);
   // "nerve impulse sent" — above the nerve path midpoint
   if(axonP>.1){
     ctx.font='bold 9px system-ui';ctx.fillStyle=rgba(C.sig,.72);
