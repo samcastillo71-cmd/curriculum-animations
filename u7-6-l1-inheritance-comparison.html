@@ -197,12 +197,13 @@ function drawSideLabels(appear){
   ctx.fillText("mom's gametes",88,GY-10);
   ctx.fillText("mom's gametes",448,GY-10);
   // Center divider — two segments leaving a gap for the key (y=148–244)
+  // x=374 = true center of gap between grids (LGX+2*CW=262, RGX=486)
   ctx.strokeStyle=rgba(LBL,.14);ctx.lineWidth=1;ctx.setLineDash([4,6]);
-  ctx.beginPath();ctx.moveTo(340,48);ctx.lineTo(340,148);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(340,244);ctx.lineTo(340,300);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(374,48);ctx.lineTo(374,148);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(374,244);ctx.lineTo(374,300);ctx.stroke();
   ctx.setLineDash([]);
   ctx.font='bold 14px system-ui';ctx.fillStyle=rgba(LBL,.28);
-  ctx.textAlign='center';ctx.fillText('vs.',340,152);
+  ctx.textAlign='center';ctx.fillText('vs.',374,152);
   ctx.textAlign='left';ctx.restore();
 }
 
@@ -285,7 +286,7 @@ function drawResults(resultT){
 function drawKey(appear){
   if(appear<=0.02)return;
   ctx.save();ctx.globalAlpha=appear*.82;
-  const kx=340,ky=160,kw=156,kh=82;
+  const kx=374,ky=160,kw=128,kh=82;
   // Solid background to cover center divider line
   ctx.fillStyle=rgba([10,16,28],.92);
   ctx.beginPath();ctx.roundRect(kx-kw/2,ky,kw,kh,4);ctx.fill();
