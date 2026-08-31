@@ -78,7 +78,7 @@ const AA_R=7,AA_GAP=18,N_AA=9;
 const FOLD_POS=[[535,195],[520,210],[530,226],[548,231],[566,226],[578,210],[570,196],[554,190],[553,212]];
 const CYCLE=11000;
 
-let _bgGrad=null,_nucGrad=null,_ribGradT=null,_ribGradB=null,_ribGradH=null;
+let _bgGrad=null,_nucGrad=null,_ribGradT=null,_ribGradB=null,_ribGradH=null,_protGlow=null;
 function drawBg(){
   if(!_bgGrad){_bgGrad=ctx.createRadialGradient(W*.2,H*.45,0,W*.2,H*.45,W*.85);_bgGrad.addColorStop(0,rgb(C.bgG));_bgGrad.addColorStop(1,rgb(C.bg));}
   ctx.fillStyle=_bgGrad;ctx.fillRect(0,0,W,H);
@@ -88,14 +88,21 @@ function drawDNA(geneAct){
   const freq=4*2*Math.PI/(DNA_BOT-DNA_TOP);
   const N=66;
   const nR=10;
-  for(let i=0;i<nR;i++){
-    const y=DNA_TOP+i*(DNA_BOT-DNA_TOP)/(nR-1);
-    const p=freq*(y-DNA_TOP);
-    const x1=DNA_CX+DNA_AMP*Math.sin(p),x2=DNA_CX-DNA_AMP*Math.sin(p);
-    const inG=y>=GENE_TOP&&y<=GENE_BOT;
-    const ga=inG?geneAct:0;
-    ctx.strokeStyle=rgba(lRGB(C.rung,[230,130,158],ga*.55),.50+ga*.32);
-    ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x2,y);ctx.stroke();
+  ctx.lineWidth=1.5;
+  if(geneAct<.02){
+    ctx.strokeStyle=rgba(C.rung,.50);ctx.beginPath();
+    for(let i=0;i<nR;i++){const y=DNA_TOP+i*(DNA_BOT-DNA_TOP)/(nR-1);const p=freq*(y-DNA_TOP);const x1=DNA_CX+DNA_AMP*Math.sin(p),x2=DNA_CX-DNA_AMP*Math.sin(p);ctx.moveTo(x1,y);ctx.lineTo(x2,y);}
+    ctx.stroke();
+  } else {
+    for(let i=0;i<nR;i++){
+      const y=DNA_TOP+i*(DNA_BOT-DNA_TOP)/(nR-1);
+      const p=freq*(y-DNA_TOP);
+      const x1=DNA_CX+DNA_AMP*Math.sin(p),x2=DNA_CX-DNA_AMP*Math.sin(p);
+      const inG=y>=GENE_TOP&&y<=GENE_BOT;
+      const ga=inG?geneAct:0;
+      ctx.strokeStyle=rgba(lRGB(C.rung,[230,130,158],ga*.55),.50+ga*.32);
+      ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x2,y);ctx.stroke();
+    }
   }
   ctx.beginPath();
   for(let i=0;i<=N;i++){const y=DNA_TOP+i*(DNA_BOT-DNA_TOP)/N;const x=DNA_CX+DNA_AMP*Math.sin(freq*(y-DNA_TOP));i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
@@ -147,10 +154,10 @@ function drawMRNA(t){
   const leftX=DNA_CX;
   const al=cl01(buildT/.12);
   ctx.save();ctx.globalAlpha=al;
-  ctx.strokeStyle=rgba(C.mrna,.92);ctx.lineWidth=2.5;ctx.lineCap='round';
+  ctx.strokeStyle=rgba(C.mrna,.92);ctx.lineWidth=2.5;ctx.lineCap='butt';
   ctx.beginPath();
   ctx.moveTo(leftX,MRNA_Y+2.5*Math.sin(0.20*leftX));
-  for(let x=leftX+2;x<=rightX;x+=2){ctx.lineTo(x,MRNA_Y+2.5*Math.sin(0.20*x));}
+  for(let x=leftX+4;x<=rightX;x+=4){ctx.lineTo(x,MRNA_Y+2.5*Math.sin(0.20*x));}
   ctx.stroke();
   if(buildT>.45){
     ctx.font='bold 12px system-ui';ctx.fillStyle=rgba(C.mrna,.90);
@@ -190,9 +197,10 @@ function drawProtein(protT,foldT){
   const shown=protT*(N_AA+0.6);
   if(foldT>.4){
     const ba=sm(cl01((foldT-.4)/.4));
-    const bg=ctx.createRadialGradient(553,213,0,553,213,42);
-    bg.addColorStop(0,rgba(C.gene,ba*.20));bg.addColorStop(1,rgba(C.gene,0));
-    ctx.fillStyle=bg;ctx.beginPath();ctx.ellipse(553,213,42,34,0,0,Math.PI*2);ctx.fill();
+    if(!_protGlow){_protGlow=ctx.createRadialGradient(553,213,0,553,213,42);_protGlow.addColorStop(0,rgba(C.gene,.20));_protGlow.addColorStop(1,rgba(C.gene,0));}
+    ctx.save();ctx.globalAlpha=ba;
+    ctx.fillStyle=_protGlow;ctx.beginPath();ctx.ellipse(553,213,42,34,0,0,Math.PI*2);ctx.fill();
+    ctx.restore();
   }
   for(let i=0;i<N_AA;i++){
     const fa=cl01(shown-i);
@@ -200,17 +208,16 @@ function drawProtein(protT,foldT){
     const linX=PROT_START+i*AA_GAP,linY=MRNA_Y;
     const fldX=FOLD_POS[i][0],fldY=FOLD_POS[i][1];
     const x=lerp(linX,fldX,foldT),y=lerp(linY,fldY,foldT);
+    ctx.save();
     if(i>0&&fa>.5){
       const pi=i-1;
       const px=lerp(PROT_START+pi*AA_GAP,FOLD_POS[pi][0],foldT);
       const py=lerp(MRNA_Y,FOLD_POS[pi][1],foldT);
-      ctx.save();ctx.globalAlpha=cl01((fa-.5)/.35);
+      ctx.globalAlpha=cl01((fa-.5)/.35);
       ctx.strokeStyle=rgba(C.prot[i%C.prot.length],.52);ctx.lineWidth=2;
       ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(x,y);ctx.stroke();
-      ctx.restore();
     }
-    const col=C.prot[i%C.prot.length];
-    ctx.save();ctx.globalAlpha=fa;
+    ctx.globalAlpha=fa;
     ctx.beginPath();ctx.arc(x,y,AA_R,0,Math.PI*2);ctx.fillStyle=_protCols[i%_protCols.length];ctx.fill();
     ctx.restore();
   }
