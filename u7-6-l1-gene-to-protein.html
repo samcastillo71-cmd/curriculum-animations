@@ -264,7 +264,6 @@ function draw(t){
   ctx.restore();
 
   ctx.save();ctx.globalAlpha=appear;
-  ctx.beginPath();ctx.arc(NUC_CX,NUC_CY,NUC_R-3,0,Math.PI*2);ctx.clip();
   drawDNA(geneAct);
   ctx.restore();
 
