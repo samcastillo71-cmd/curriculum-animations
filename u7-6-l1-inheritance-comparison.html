@@ -198,8 +198,7 @@ function drawSideLabels(appear){
   ctx.fillText("MOM'S",69,96);ctx.fillText("GAMETES",69,107);
   ctx.fillText("MOM'S",429,96);ctx.fillText("GAMETES",429,107);
   ctx.strokeStyle=rgba(LBL,.14);ctx.lineWidth=1;ctx.setLineDash([4,6]);
-  ctx.beginPath();ctx.moveTo(340,36);ctx.lineTo(340,136);ctx.stroke();
-  ctx.beginPath();ctx.moveTo(340,232);ctx.lineTo(340,288);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(340,28);ctx.lineTo(340,344);ctx.stroke();
   ctx.setLineDash([]);
   ctx.textAlign='left';ctx.restore();
 }
@@ -283,7 +282,7 @@ function drawResults(resultT){
 function drawKey(appear){
   if(appear<=0.02)return;
   ctx.save();ctx.globalAlpha=appear*.82;
-  const kx=340,ky=148,kw=114,kh=82;
+  const kx=340,ky=136,kw=114,kh=82;
   // Solid background to cover center divider line
   ctx.fillStyle=rgba([10,16,28],.92);
   ctx.beginPath();ctx.roundRect(kx-kw/2,ky,kw,kh,4);ctx.fill();
