@@ -89,20 +89,13 @@ function drawDNA(geneAct){
   const N=66;
   const nR=10;
   ctx.lineWidth=1.5;
-  if(geneAct<.02){
-    ctx.strokeStyle=rgba(C.rung,.50);ctx.beginPath();
-    for(let i=0;i<nR;i++){const y=DNA_TOP+i*(DNA_BOT-DNA_TOP)/(nR-1);const p=freq*(y-DNA_TOP);const x1=DNA_CX+DNA_AMP*Math.sin(p),x2=DNA_CX-DNA_AMP*Math.sin(p);ctx.moveTo(x1,y);ctx.lineTo(x2,y);}
+  ctx.strokeStyle=rgba(C.rung,.50);ctx.beginPath();
+  for(let i=0;i<nR;i++){const y=DNA_TOP+i*(DNA_BOT-DNA_TOP)/(nR-1);const p=freq*(y-DNA_TOP);const x1=DNA_CX+DNA_AMP*Math.sin(p),x2=DNA_CX-DNA_AMP*Math.sin(p);if(geneAct<.02||y<GENE_TOP||y>GENE_BOT){ctx.moveTo(x1,y);ctx.lineTo(x2,y);}}
+  ctx.stroke();
+  if(geneAct>=.02){
+    ctx.strokeStyle=rgba(lRGB(C.rung,[230,130,158],geneAct*.55),.50+geneAct*.32);ctx.beginPath();
+    for(let i=0;i<nR;i++){const y=DNA_TOP+i*(DNA_BOT-DNA_TOP)/(nR-1);if(y<GENE_TOP||y>GENE_BOT)continue;const p=freq*(y-DNA_TOP);const x1=DNA_CX+DNA_AMP*Math.sin(p),x2=DNA_CX-DNA_AMP*Math.sin(p);ctx.moveTo(x1,y);ctx.lineTo(x2,y);}
     ctx.stroke();
-  } else {
-    for(let i=0;i<nR;i++){
-      const y=DNA_TOP+i*(DNA_BOT-DNA_TOP)/(nR-1);
-      const p=freq*(y-DNA_TOP);
-      const x1=DNA_CX+DNA_AMP*Math.sin(p),x2=DNA_CX-DNA_AMP*Math.sin(p);
-      const inG=y>=GENE_TOP&&y<=GENE_BOT;
-      const ga=inG?geneAct:0;
-      ctx.strokeStyle=rgba(lRGB(C.rung,[230,130,158],ga*.55),.50+ga*.32);
-      ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x2,y);ctx.stroke();
-    }
   }
   ctx.beginPath();
   for(let i=0;i<=N;i++){const y=DNA_TOP+i*(DNA_BOT-DNA_TOP)/N;const x=DNA_CX+DNA_AMP*Math.sin(freq*(y-DNA_TOP));i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);}
@@ -156,8 +149,8 @@ function drawMRNA(t){
   ctx.save();ctx.globalAlpha=al;
   ctx.strokeStyle=rgba(C.mrna,.92);ctx.lineWidth=2.5;ctx.lineCap='butt';
   ctx.beginPath();
-  ctx.moveTo(leftX,MRNA_Y+2.5*Math.sin(0.20*leftX));
-  for(let x=leftX+4;x<=rightX;x+=4){ctx.lineTo(x,MRNA_Y+2.5*Math.sin(0.20*x));}
+  ctx.moveTo(leftX,MRNA_Y+_sinLut[leftX|0]);
+  for(let x=leftX+4;x<=rightX;x+=4){ctx.lineTo(x,MRNA_Y+_sinLut[x|0]);}
   ctx.stroke();
   if(buildT>.45){
     ctx.font='bold 12px system-ui';ctx.fillStyle=rgba(C.mrna,.90);
@@ -275,13 +268,18 @@ function draw(t){
 
   ctx.save();ctx.globalAlpha=appear;drawProtein(protT,foldT);ctx.restore();
 
-  ['s0','s1','s2','s3'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',i===activeStep(t)));
+  const _s=activeStep(t);if(_s!==_lastStep){_lastStep=_s;_stepEls.forEach((el,i)=>el.classList.toggle('active',i===_s));}
 }
 
 // Pre-compute stable color strings to avoid per-frame allocation
 const _ribBdr=rgba(C.rib.map(v=>Math.round(v*.5)),.50);
 const _ribSmBdr=rgba(C.ribSm.map(v=>Math.round(v*.5)),.50);
 const _protCols=C.prot.map(col=>rgba(col,.92));
+// Sine lookup for mRNA wave (x 0..W, step 1)
+const _sinLut=new Float32Array(W+4);for(let x=0;x<=W+3;x++)_sinLut[x]=2.5*Math.sin(0.20*x);
+// Cache step DOM elements and last active step to avoid per-frame style recalc
+const _stepEls=['s0','s1','s2','s3'].map(id=>document.getElementById(id));
+let _lastStep=-99;
 
 let t=0,running=true,lastTs=null;
 function loop(ts){
