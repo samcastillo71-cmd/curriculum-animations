@@ -49,8 +49,8 @@ const ph=(t,s,e)=>cl01((t-s)/(e-s));
 const rgb=([r,g,b])=>`rgb(${r},${g},${b})`;
 const rgba=([r,g,b],a)=>`rgba(${r},${g},${b},${a})`;
 
-const AC={XN:[68,145,222],Xc:[200,40,88],Y:[95,125,160],B:[58,175,120],b:[210,128,38]};
-const CELL_BG={normal:[16,26,48],carrier:[20,40,72],colorblind:[62,12,30],affected:[52,30,8]};
+const AC={XN:[68,145,222],Xc:[200,40,88],Y:[95,125,160],B:[60,200,120],b:[30,148,90]};
+const CELL_BG={normal:[16,26,48],carrier:[20,40,72],colorblind:[62,12,30],affected:[8,34,22]};
 const LBL=[172,204,232];
 
 // Shared cell geometry
@@ -261,7 +261,7 @@ function drawResults(resultT){
   ctx.textAlign='center';ctx.fillText('50% chance per son to have colorblindness',LGX+CW,by+70);
 
   // Right callout
-  ctx.fillStyle=rgba([52,30,8],.65);ctx.beginPath();ctx.roundRect(RGX-52,by,bw,90,5);ctx.fill();
+  ctx.fillStyle=rgba([8,34,22],.65);ctx.beginPath();ctx.roundRect(RGX-52,by,bw,90,5);ctx.fill();
   ctx.strokeStyle=rgba(AC.b,.45);ctx.lineWidth=.8;ctx.stroke();
   ctx.font='bold 11px system-ui';ctx.fillStyle=rgba(AC.b,.90);ctx.textAlign='center';
   ctx.fillText('Every child gets 2 allele copies.',RGX+CW,by+16);
