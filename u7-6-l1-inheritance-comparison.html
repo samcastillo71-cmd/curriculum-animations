@@ -109,7 +109,7 @@ function pill(cx,cy,type,al,sc){
     ctx.font=`bold ${7*sc}px system-ui`;ctx.fillText('N',cx+5*sc,cy-3*sc);
   } else if(type==='Xc'){
     ctx.font=`bold ${10*sc}px system-ui`;ctx.fillText('X',cx-3.5*sc,cy);
-    ctx.font=`bold ${7*sc}px system-ui`;ctx.fillText('c',cx+5*sc,cy-3*sc);
+    ctx.font=`bold ${7*sc}px system-ui`;ctx.fillText('C',cx+3.5*sc,cy-3*sc);
   } else {
     ctx.font=`bold ${10*sc}px system-ui`;ctx.fillText(type,cx,cy);
   }
@@ -292,11 +292,11 @@ function drawKey(appear){
   ctx.font='bold 7.5px system-ui';ctx.fillStyle=rgba(LBL,.64);
   ctx.textAlign='center';ctx.fillText('ALLELE KEY',kx,ky+13);
   const tx=kx-kw/2+8,lh=12;let ty=ky+27;
-  ctx.font='8px system-ui';ctx.textAlign='left';
-  ctx.fillStyle=rgba(AC.XN,.92);ctx.fillText('XN',tx,ty);
-  ctx.fillStyle=rgba(LBL,.58);ctx.fillText('= normal vision',tx+18,ty);ty+=lh;
-  ctx.fillStyle=rgba(AC.Xc,.92);ctx.fillText('Xc',tx,ty);
-  ctx.fillStyle=rgba(LBL,.58);ctx.fillText('= colorblind allele',tx+18,ty);ty+=lh;
+  ctx.textAlign='left';
+  ctx.fillStyle=rgba(AC.XN,.92);ctx.font='bold 8px system-ui';ctx.fillText('X',tx,ty);ctx.font='bold 6px system-ui';ctx.fillText('N',tx+6,ty-3);
+  ctx.fillStyle=rgba(LBL,.58);ctx.font='8px system-ui';ctx.fillText('= normal vision',tx+18,ty);ty+=lh;
+  ctx.fillStyle=rgba(AC.Xc,.92);ctx.font='bold 8px system-ui';ctx.fillText('X',tx,ty);ctx.font='bold 6px system-ui';ctx.fillText('C',tx+6,ty-3);
+  ctx.fillStyle=rgba(LBL,.58);ctx.font='8px system-ui';ctx.fillText('= colorblind allele',tx+18,ty);ty+=lh;
   ctx.fillStyle=rgba(AC.Y,.82);ctx.fillText('Y',tx,ty);
   ctx.fillStyle=rgba(LBL,.58);ctx.fillText('= Y chromosome',tx+11,ty);
   // Separator drawn at Y baseline + 4px gap, then 8px gap before B
