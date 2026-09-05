@@ -49,7 +49,7 @@ const ph=(t,s,e)=>cl01((t-s)/(e-s));
 const rgb=([r,g,b])=>`rgb(${r},${g},${b})`;
 const rgba=([r,g,b],a)=>`rgba(${r},${g},${b},${a})`;
 
-const AC={XN:[68,145,222],Xc:[200,40,88],Y:[95,125,160],B:[160,90,230],b:[108,52,172]};
+const AC={XN:[68,145,222],Xc:[200,40,88],Y:[95,125,160],B:[68,145,222],b:[148,80,225]};
 const CELL_BG={normal:[16,26,48],carrier:[20,40,72],colorblind:[62,12,30],affected:[18,8,38]};
 const LBL=[172,204,232];
 
@@ -187,7 +187,7 @@ function drawSideLabels(appear){
   ctx.textAlign='center';
   ctx.font='bold 14px system-ui';ctx.fillStyle=rgba(AC.Xc,.82);
   ctx.fillText('X-LINKED TRAIT',LGX+CW,14);
-  ctx.font='bold 14px system-ui';ctx.fillStyle=rgba(AC.B,.82);
+  ctx.font='bold 14px system-ui';ctx.fillStyle=rgba(AC.b,.88);
   ctx.fillText('AUTOSOMAL TRAIT',RGX+CW,14);
   ctx.font='bold 13px system-ui';ctx.fillStyle=rgba(LBL,.28);
   ctx.fillText('vs.',340,14);
