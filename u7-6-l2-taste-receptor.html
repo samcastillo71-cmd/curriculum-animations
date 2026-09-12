@@ -548,5 +548,9 @@ const STEP_T=[0.20,0.40,0.63,0.80];
     t=STEP_T[i];lastTs=null;draw(t);
   });
 });
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();advanceStep();}
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();backStep();}
+});
 draw(0);
 </script>
