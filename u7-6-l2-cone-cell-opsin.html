@@ -57,7 +57,7 @@
   <div class="controls">
     <button id="btn-back" class="sec">← Back</button>
     <button id="btn-loop">↻ Loop</button>
-    <button id="btn-half" class="sec">½×</button>
+    <button id="btn-half" class="sec">Speed</button>
     <button id="btn-restart" class="sec">Restart</button>
   </div>
 </div>
@@ -544,7 +544,7 @@ function drawBg(){
 }
 
 function activeStep(t){
-  if(t<.09)return -1;if(t<.37)return 0;if(t<.55)return 1;if(t<.73)return 2;if(t<.96)return 3;return -1;
+  if(t<.09)return -1;if(t<=.37)return 0;if(t<=.55)return 1;if(t<=.73)return 2;if(t<=.96)return 3;return -1;
 }
 
 function draw(t){
@@ -573,49 +573,70 @@ function draw(t){
 
 const CYCLE=9800;
 const PAUSE_T=[0.37,0.55,0.73,0.96];
-let t=0,running=false,lastTs=null,loopMode=false,halfSpeed=false,pauseTarget=null;
+let t=0,running=false,lastTs=null,loopState=0,halfSpeed=false,pauseTarget=null,reverse=false,phaseStart=0,phaseEnd=1;
+const btnLoop=document.getElementById('btn-loop');
+const btnHalf=document.getElementById('btn-half');
+function updateLoopBtn(){btnLoop.textContent=loopState===1?'↻ Phase':loopState===2?'↻ All':'↻ Loop';}
 function loop(ts){
   if(!running)return;
   const dt=lastTs!==null?Math.min(ts-lastTs,100):0;
   lastTs=ts;
   const advance=(dt/CYCLE)*(halfSpeed?.5:1);
-  if(!loopMode&&pauseTarget!==null){
-    const nt=t+advance;
-    if(nt>=pauseTarget){t=pauseTarget;pauseTarget=null;running=false;btnLoop.textContent='↻ Loop';draw(t);return;}
+  if(reverse){
+    const nt=t-advance;
+    if(nt<=pauseTarget){t=pauseTarget;pauseTarget=null;running=false;reverse=false;draw(t);return;}
     t=nt;
-  }else{t=(t+advance)%1;}
+  }else if(loopState===1){
+    t+=advance;if(t>=phaseEnd)t=phaseStart;
+  }else if(loopState===2){
+    t=(t+advance)%1;
+  }else if(pauseTarget!==null){
+    const nt=t+advance;
+    if(nt>=pauseTarget){t=pauseTarget;pauseTarget=null;running=false;draw(t);return;}
+    t=nt;
+  }
   draw(t);requestAnimationFrame(loop);
 }
 function advanceStep(){
-  if(loopMode){loopMode=false;running=false;btnLoop.textContent='↻ Loop';return;}
+  if(loopState>0){loopState=0;updateLoopBtn();running=false;return;}
+  reverse=false;
   const next=PAUSE_T.find(p=>p>t+.005);
   if(next!==undefined){pauseTarget=next;}else{t=0;pauseTarget=PAUSE_T[0];}
   if(!running){running=true;lastTs=null;requestAnimationFrame(loop);}
 }
 function backStep(){
-  loopMode=false;running=false;btnLoop.textContent='↻ Loop';
+  loopState=0;updateLoopBtn();running=false;reverse=false;
   const si=PAUSE_T.findLastIndex(p=>p<t-.005);
-  t=si>=0?PAUSE_T[si]:0;
-  pauseTarget=si+1<PAUSE_T.length?PAUSE_T[si+1]:PAUSE_T[0];
+  const target=si>=0?PAUSE_T[si]:0;
+  if(Math.abs(t-target)<.005){draw(t);return;}
+  reverse=true;pauseTarget=target;
   running=true;lastTs=null;requestAnimationFrame(loop);
 }
-const btnLoop=document.getElementById('btn-loop');
-const btnHalf=document.getElementById('btn-half');
 btnLoop.addEventListener('click',()=>{
-  loopMode=!loopMode;
-  if(loopMode){pauseTarget=null;running=true;lastTs=null;btnLoop.textContent='Pause';requestAnimationFrame(loop);}
-  else{running=false;btnLoop.textContent='↻ Loop';}
+  if(loopState===0){
+    loopState=1;
+    const pi=PAUSE_T.findLastIndex(p=>p<=t+.005);
+    phaseEnd=pi>=0?PAUSE_T[pi]:PAUSE_T[0];
+    phaseStart=pi>0?PAUSE_T[pi-1]:0;
+    t=phaseStart;updateLoopBtn();
+    running=true;lastTs=null;requestAnimationFrame(loop);
+  }else if(loopState===1){
+    loopState=2;updateLoopBtn();
+    if(!running){running=true;lastTs=null;requestAnimationFrame(loop);}
+  }else{
+    loopState=0;updateLoopBtn();running=false;
+  }
 });
-btnHalf.addEventListener('click',()=>{halfSpeed=!halfSpeed;btnHalf.textContent=halfSpeed?'1×':'½×';});
+btnHalf.addEventListener('click',()=>{halfSpeed=!halfSpeed;btnHalf.textContent=halfSpeed?'½× Speed':'Speed';});
 document.getElementById('btn-back').addEventListener('click',backStep);
 document.getElementById('btn-restart').addEventListener('click',()=>{
-  t=0;lastTs=null;pauseTarget=null;loopMode=false;running=false;btnLoop.textContent='↻ Loop';draw(0);
+  t=0;lastTs=null;pauseTarget=null;loopState=0;running=false;reverse=false;updateLoopBtn();draw(0);
 });
 document.getElementById('cvs').addEventListener('click',advanceStep);
 const STEP_T=[0.34,0.44,0.62,0.90];
 ['s0','s1','s2','s3'].forEach((id,i)=>{
   document.getElementById(id).addEventListener('click',e=>{
-    e.stopPropagation();loopMode=false;running=false;btnLoop.textContent='↻ Loop';
+    e.stopPropagation();loopState=0;running=false;reverse=false;updateLoopBtn();
     t=STEP_T[i];lastTs=null;draw(t);
   });
 });
