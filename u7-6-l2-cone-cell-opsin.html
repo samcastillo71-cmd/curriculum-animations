@@ -573,10 +573,14 @@ function draw(t){
 
 const CYCLE=9800;
 const PAUSE_T=[0.37,0.55,0.73,0.96];
-let t=0,running=false,lastTs=null,loopMode=false,halfSpeed=false,pauseTarget=null,reverse=false,phaseStart=0,phaseEnd=0;
+let t=0,running=false,lastTs=null,loopMode='off',halfSpeed=false,pauseTarget=null,reverse=false,phaseStart=0,phaseEnd=0;
 const btnLoop=document.getElementById('btn-loop');
 const btnHalf=document.getElementById('btn-half');
-function updateToggles(){btnLoop.classList.toggle('sec',!loopMode);btnHalf.classList.toggle('sec',!halfSpeed);btnHalf.textContent=halfSpeed?'0.5':'1.0';}
+function updateToggles(){
+  btnLoop.classList.toggle('sec',loopMode==='off');
+  btnLoop.textContent=loopMode==='phase'?'↻1':loopMode==='animation'?'↻∞':'↻';
+  btnHalf.classList.toggle('sec',!halfSpeed);btnHalf.textContent=halfSpeed?'0.5':'1.0';
+}
 function setPhaseAround(tval){
   const pi=PAUSE_T.findIndex(p=>p>tval);
   phaseEnd=pi>=0?PAUSE_T[pi]:PAUSE_T[PAUSE_T.length-1];
@@ -591,8 +595,10 @@ function loop(ts){
     const nt=t-advance*2;
     if(nt<=pauseTarget){t=pauseTarget;pauseTarget=null;running=false;reverse=false;draw(t);return;}
     t=nt;
-  }else if(loopMode){
+  }else if(loopMode==='phase'){
     t+=advance;if(t>=phaseEnd)t=phaseStart;
+  }else if(loopMode==='animation'){
+    t+=advance;if(t>=1)t=0;
   }else if(pauseTarget!==null){
     const nt=t+advance;
     if(nt>=pauseTarget){t=pauseTarget;pauseTarget=null;running=false;draw(t);return;}
@@ -601,38 +607,23 @@ function loop(ts){
   draw(t);requestAnimationFrame(loop);
 }
 function advanceStep(){
-  reverse=false;
-  if(loopMode){
-    const ci=PAUSE_T.findIndex(p=>Math.abs(p-phaseEnd)<.001);
-    if(ci<0||ci>=PAUSE_T.length-1){phaseEnd=PAUSE_T[0];phaseStart=0;}
-    else{phaseStart=PAUSE_T[ci];phaseEnd=PAUSE_T[ci+1];}
-    t=phaseStart;
-    if(!running){running=true;lastTs=performance.now();requestAnimationFrame(loop);}
-  }else{
-    const ni=PAUSE_T.findIndex(p=>p>t+.005);
-    if(ni>=0){pauseTarget=PAUSE_T[ni];}else{t=0;pauseTarget=PAUSE_T[0];}
-    if(!running){running=true;lastTs=performance.now();requestAnimationFrame(loop);}
-  }
+  reverse=false;loopMode='off';updateToggles();
+  const ni=PAUSE_T.findIndex(p=>p>t+.005);
+  if(ni>=0){pauseTarget=PAUSE_T[ni];}else{t=0;pauseTarget=PAUSE_T[0];}
+  if(!running){running=true;lastTs=performance.now();requestAnimationFrame(loop);}
 }
 function backStep(){
-  running=false;
-  if(loopMode){
-    const ci=PAUSE_T.findIndex(p=>Math.abs(p-phaseEnd)<.001);
-    if(ci<=0){phaseEnd=PAUSE_T[0];phaseStart=0;}
-    else{phaseEnd=PAUSE_T[ci-1];phaseStart=ci>1?PAUSE_T[ci-2]:0;}
-    t=phaseStart;running=true;lastTs=performance.now();requestAnimationFrame(loop);
-  }else{
-    const si=PAUSE_T.findLastIndex(p=>p<t-.005);
-    const target=si>=0?PAUSE_T[si]:0;
-    if(Math.abs(t-target)<.005){draw(t);return;}
-    reverse=true;pauseTarget=target;
-    running=true;lastTs=performance.now();requestAnimationFrame(loop);
-  }
+  loopMode='off';updateToggles();running=false;
+  const si=PAUSE_T.findLastIndex(p=>p<t-.005);
+  const target=si>=0?PAUSE_T[si]:0;
+  if(Math.abs(t-target)<.005){draw(t);return;}
+  reverse=true;pauseTarget=target;
+  running=true;lastTs=performance.now();requestAnimationFrame(loop);
 }
 btnLoop.addEventListener('click',()=>{
-  loopMode=!loopMode;
-  if(loopMode){setPhaseAround(t);t=phaseStart;running=true;lastTs=performance.now();requestAnimationFrame(loop);}
-  else{running=false;}
+  if(loopMode==='off'){loopMode='phase';setPhaseAround(t);t=phaseStart;running=true;lastTs=performance.now();requestAnimationFrame(loop);}
+  else if(loopMode==='phase'){loopMode='animation';if(!running){running=true;lastTs=performance.now();requestAnimationFrame(loop);}}
+  else{loopMode='off';running=false;}
   updateToggles();
 });
 btnHalf.addEventListener('click',()=>{halfSpeed=!halfSpeed;updateToggles();});
@@ -642,7 +633,7 @@ document.getElementById('cvs').addEventListener('click',advanceStep);
 const STEP_T=[0.34,0.44,0.62,0.90];
 ['s0','s1','s2','s3'].forEach((id,i)=>{
   document.getElementById(id).addEventListener('click',e=>{
-    e.stopPropagation();loopMode=false;running=false;reverse=false;updateToggles();
+    e.stopPropagation();loopMode='off';running=false;reverse=false;updateToggles();
     t=STEP_T[i];lastTs=null;draw(t);
   });
 });
