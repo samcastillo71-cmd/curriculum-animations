@@ -34,7 +34,7 @@
   <div class="controls">
     <button id="btn-back" class="sec">←</button>
     <button id="btn-loop" class="sec">↻</button>
-    <button id="btn-half" class="sec">½×</button>
+    <button id="btn-half" class="sec">1.0</button>
     <button id="btn-next">→</button>
   </div>
 </div>
@@ -365,10 +365,10 @@ function draw(t){
 }
 
 const PAUSE_T=[0.48,0.72,0.95];
-let t=0,running=false,lastTs=null,loopMode=false,halfSpeed=false,pauseTarget=null,reverse=false,phaseStart=0,phaseEnd=0;
+let t=0,running=false,lastTs=null,loopMode=false,halfSpeed=false,pauseTarget=null,phaseStart=0,phaseEnd=0;
 const btnLoop=document.getElementById('btn-loop');
 const btnHalf=document.getElementById('btn-half');
-function updateToggles(){btnLoop.classList.toggle('sec',!loopMode);btnHalf.classList.toggle('sec',!halfSpeed);}
+function updateToggles(){btnLoop.classList.toggle('sec',!loopMode);btnHalf.classList.toggle('sec',!halfSpeed);btnHalf.textContent=halfSpeed?'0.5':'1.0';}
 function setPhaseAround(tval){
   const pi=PAUSE_T.findIndex(p=>p>tval);
   phaseEnd=pi>=0?PAUSE_T[pi]:PAUSE_T[PAUSE_T.length-1];
@@ -379,11 +379,7 @@ function loop(ts){
   const dt=lastTs!==null?Math.min(ts-lastTs,100):0;
   lastTs=ts;
   const advance=(dt/CYCLE)*(halfSpeed?.5:1);
-  if(reverse){
-    const nt=t-advance;
-    if(nt<=pauseTarget){t=pauseTarget;pauseTarget=null;running=false;reverse=false;draw(t);return;}
-    t=nt;
-  }else if(loopMode){
+  if(loopMode){
     t+=advance;if(t>=phaseEnd)t=phaseStart;
   }else if(pauseTarget!==null){
     const nt=t+advance;
@@ -393,7 +389,6 @@ function loop(ts){
   draw(t);requestAnimationFrame(loop);
 }
 function advanceStep(){
-  reverse=false;
   if(loopMode){
     const ci=PAUSE_T.findIndex(p=>Math.abs(p-phaseEnd)<.001);
     if(ci<0||ci>=PAUSE_T.length-1){phaseEnd=PAUSE_T[0];phaseStart=0;}
@@ -407,7 +402,7 @@ function advanceStep(){
   }
 }
 function backStep(){
-  reverse=false;running=false;
+  running=false;
   if(loopMode){
     const ci=PAUSE_T.findIndex(p=>Math.abs(p-phaseEnd)<.001);
     if(ci<=0){phaseEnd=PAUSE_T[0];phaseStart=0;}
@@ -415,10 +410,9 @@ function backStep(){
     t=phaseStart;running=true;lastTs=performance.now();requestAnimationFrame(loop);
   }else{
     const si=PAUSE_T.findLastIndex(p=>p<t-.005);
-    const target=si>=0?PAUSE_T[si]:0;
-    if(Math.abs(t-target)<.005){draw(t);return;}
-    reverse=true;pauseTarget=target;
-    running=true;lastTs=performance.now();requestAnimationFrame(loop);
+    t=si>0?PAUSE_T[si-1]:0;
+    pauseTarget=si>=0?PAUSE_T[si]:PAUSE_T[0];
+    draw(t);running=true;lastTs=performance.now();requestAnimationFrame(loop);
   }
 }
 btnLoop.addEventListener('click',()=>{
@@ -434,7 +428,7 @@ document.getElementById('cvs').addEventListener('click',advanceStep);
 const STEP_T=[0.46,0.70,0.88];
 ['s0','s1','s2'].forEach((id,i)=>{
   document.getElementById(id).addEventListener('click',e=>{
-    e.stopPropagation();loopMode=false;running=false;reverse=false;updateToggles();
+    e.stopPropagation();loopMode=false;running=false;updateToggles();
     t=STEP_T[i];lastTs=null;draw(t);
   });
 });
