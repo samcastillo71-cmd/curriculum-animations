@@ -33,13 +33,17 @@
     <div class="step" id="s3"><span class="step-num">STEP 4</span>1 in 2 sons: colorblind</div>
   </div>
   <div class="controls">
-    <button id="btn-play">Pause</button>
+    <button id="btn-back" class="sec">← Back</button>
+    <button id="btn-loop">↻ Loop</button>
+    <button id="btn-half" class="sec">½×</button>
     <button id="btn-restart" class="sec">Restart</button>
   </div>
 </div>
 <script>
 const cv=document.getElementById('cvs'),ctx=cv.getContext('2d');
 const W=cv.width,H=cv.height;
+const _dpr=window.devicePixelRatio||1,_sc=Math.max(2,_dpr);
+cv.width=W*_sc;cv.height=H*_sc;ctx.scale(_sc,_sc);
 const cl01=x=>Math.max(0,Math.min(1,x));
 const lerp=(a,b,t)=>a+(b-a)*t;
 const sm=t=>t*t*(3-2*t);
@@ -299,25 +303,52 @@ function draw(t){
   ['s0','s1','s2','s3'].forEach((id,i)=>document.getElementById(id).classList.toggle('active',i===activeStep(t)));
 }
 
-let t=0,running=true,lastTs=null;
+const PAUSE_T=[0.26,0.48,0.72,0.95];
+let t=0,running=false,lastTs=null,loopMode=false,halfSpeed=false,pauseTarget=null;
 function loop(ts){
   if(!running)return;
-  if(lastTs!==null)t=(t+(ts-lastTs)/CYCLE)%1;
-  lastTs=ts;draw(t);requestAnimationFrame(loop);
+  const dt=lastTs!==null?Math.min(ts-lastTs,100):0;
+  lastTs=ts;
+  const advance=(dt/CYCLE)*(halfSpeed?.5:1);
+  if(!loopMode&&pauseTarget!==null){
+    const nt=t+advance;
+    if(nt>=pauseTarget){t=pauseTarget;pauseTarget=null;running=false;btnLoop.textContent='↻ Loop';draw(t);return;}
+    t=nt;
+  }else{t=(t+advance)%1;}
+  draw(t);requestAnimationFrame(loop);
 }
-const btnPlay=document.getElementById('btn-play');
-document.getElementById('btn-restart').addEventListener('click',()=>{t=0;lastTs=null;if(!running){running=true;btnPlay.textContent='Pause';requestAnimationFrame(loop);}});
-function togglePlay(){running=!running;btnPlay.textContent=running?'Pause':'Play';if(running){lastTs=null;requestAnimationFrame(loop);}}
-btnPlay.addEventListener('click',togglePlay);
-document.getElementById('cvs').addEventListener('click',togglePlay);
+function advanceStep(){
+  if(loopMode){loopMode=false;running=false;btnLoop.textContent='↻ Loop';return;}
+  const next=PAUSE_T.find(p=>p>t+.005);
+  if(next!==undefined){pauseTarget=next;}else{t=0;pauseTarget=PAUSE_T[0];}
+  if(!running){running=true;lastTs=null;requestAnimationFrame(loop);}
+}
+function backStep(){
+  loopMode=false;running=false;btnLoop.textContent='↻ Loop';
+  const si=PAUSE_T.findLastIndex(p=>p<t-.005);
+  t=si>=0?PAUSE_T[si]:0;
+  pauseTarget=si+1<PAUSE_T.length?PAUSE_T[si+1]:PAUSE_T[0];
+  running=true;lastTs=null;requestAnimationFrame(loop);
+}
+const btnLoop=document.getElementById('btn-loop');
+const btnHalf=document.getElementById('btn-half');
+btnLoop.addEventListener('click',()=>{
+  loopMode=!loopMode;
+  if(loopMode){pauseTarget=null;running=true;lastTs=null;btnLoop.textContent='Pause';requestAnimationFrame(loop);}
+  else{running=false;btnLoop.textContent='↻ Loop';}
+});
+btnHalf.addEventListener('click',()=>{halfSpeed=!halfSpeed;btnHalf.textContent=halfSpeed?'1×':'½×';});
+document.getElementById('btn-back').addEventListener('click',backStep);
+document.getElementById('btn-restart').addEventListener('click',()=>{
+  t=0;lastTs=null;pauseTarget=null;loopMode=false;running=false;btnLoop.textContent='↻ Loop';draw(0);
+});
+document.getElementById('cvs').addEventListener('click',advanceStep);
 const STEP_T=[0.22,0.46,0.70,0.88];
 ['s0','s1','s2','s3'].forEach((id,i)=>{
   document.getElementById(id).addEventListener('click',e=>{
-    e.stopPropagation();
-    t=STEP_T[i];lastTs=null;
-    if(running){running=false;btnPlay.textContent='Play';}
-    draw(t);
+    e.stopPropagation();loopMode=false;running=false;btnLoop.textContent='↻ Loop';
+    t=STEP_T[i];lastTs=null;draw(t);
   });
 });
-if(window.matchMedia('(prefers-reduced-motion:reduce)').matches){running=false;t=.60;btnPlay.textContent='Play';draw(t);}else{requestAnimationFrame(loop);}
+draw(0);
 </script>

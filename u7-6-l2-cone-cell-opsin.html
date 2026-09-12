@@ -55,7 +55,9 @@
     <div class="step" id="s3"><span class="step-num">STEP 4</span>Signal sent to brain</div>
   </div>
   <div class="controls">
-    <button id="btn-play">Pause</button>
+    <button id="btn-back" class="sec">← Back</button>
+    <button id="btn-loop">↻ Loop</button>
+    <button id="btn-half" class="sec">½×</button>
     <button id="btn-restart" class="sec">Restart</button>
   </div>
 </div>
@@ -521,10 +523,13 @@ function drawNeuron(t){
     ctx.fillStyle=rgb(C.sig);ctx.beginPath();ctx.arc(hx,hy,4.5,0,Math.PI*2);ctx.fill();
   }
 
+  // Static nerve label (always shown once neuron draws)
+  ctx.font='8.5px system-ui';ctx.fillStyle=rgba(C.lbl,.28);
+  ctx.fillText('OPTIC NERVE',368,282);
   // "nerve impulse sent" — above the nerve path midpoint
   if(axonP>.1){
     ctx.font='bold 9px system-ui';ctx.fillStyle=rgba(C.sig,.72);
-    ctx.fillText('nerve impulse sent',360,264);
+    ctx.fillText('NERVE IMPULSE SENT',360,264);
   }
   // brain blob — dim hint while axon fires, fully lit when signal arrives
   const brainAlpha=termP>.15?sm(termP):(axonP>.05?.22:0);
@@ -566,30 +571,53 @@ function draw(t){
     document.getElementById(id).classList.toggle('active',i===activeStep(t)));
 }
 
-let t=0,running=true,lastTs=null;
 const CYCLE=9800;
+const PAUSE_T=[0.37,0.55,0.73,0.96];
+let t=0,running=false,lastTs=null,loopMode=false,halfSpeed=false,pauseTarget=null;
 function loop(ts){
   if(!running)return;
-  if(lastTs!==null)t=(t+(ts-lastTs)/CYCLE)%1;
-  lastTs=ts;draw(t);requestAnimationFrame(loop);
+  const dt=lastTs!==null?Math.min(ts-lastTs,100):0;
+  lastTs=ts;
+  const advance=(dt/CYCLE)*(halfSpeed?.5:1);
+  if(!loopMode&&pauseTarget!==null){
+    const nt=t+advance;
+    if(nt>=pauseTarget){t=pauseTarget;pauseTarget=null;running=false;btnLoop.textContent='↻ Loop';draw(t);return;}
+    t=nt;
+  }else{t=(t+advance)%1;}
+  draw(t);requestAnimationFrame(loop);
 }
-const btnPlay=document.getElementById('btn-play');
-document.getElementById('btn-restart').addEventListener('click',()=>{
-  t=0;lastTs=null;
-  if(!running){running=true;btnPlay.textContent='Pause';requestAnimationFrame(loop);}
+function advanceStep(){
+  if(loopMode){loopMode=false;running=false;btnLoop.textContent='↻ Loop';return;}
+  const next=PAUSE_T.find(p=>p>t+.005);
+  if(next!==undefined){pauseTarget=next;}else{t=0;pauseTarget=PAUSE_T[0];}
+  if(!running){running=true;lastTs=null;requestAnimationFrame(loop);}
+}
+function backStep(){
+  loopMode=false;running=false;btnLoop.textContent='↻ Loop';
+  const si=PAUSE_T.findLastIndex(p=>p<t-.005);
+  t=si>=0?PAUSE_T[si]:0;
+  pauseTarget=si+1<PAUSE_T.length?PAUSE_T[si+1]:PAUSE_T[0];
+  running=true;lastTs=null;requestAnimationFrame(loop);
+}
+const btnLoop=document.getElementById('btn-loop');
+const btnHalf=document.getElementById('btn-half');
+btnLoop.addEventListener('click',()=>{
+  loopMode=!loopMode;
+  if(loopMode){pauseTarget=null;running=true;lastTs=null;btnLoop.textContent='Pause';requestAnimationFrame(loop);}
+  else{running=false;btnLoop.textContent='↻ Loop';}
 });
-function togglePlay(){
-  running=!running;btnPlay.textContent=running?'Pause':'Play';
-  if(running){lastTs=null;requestAnimationFrame(loop);}
-}
-btnPlay.addEventListener('click',togglePlay);
-document.getElementById('cvs').addEventListener('click',togglePlay);
-const STEP_T=[0.34,0.52,0.70,0.90];
+btnHalf.addEventListener('click',()=>{halfSpeed=!halfSpeed;btnHalf.textContent=halfSpeed?'1×':'½×';});
+document.getElementById('btn-back').addEventListener('click',backStep);
+document.getElementById('btn-restart').addEventListener('click',()=>{
+  t=0;lastTs=null;pauseTarget=null;loopMode=false;running=false;btnLoop.textContent='↻ Loop';draw(0);
+});
+document.getElementById('cvs').addEventListener('click',advanceStep);
+const STEP_T=[0.34,0.44,0.62,0.90];
 ['s0','s1','s2','s3'].forEach((id,i)=>{
   document.getElementById(id).addEventListener('click',e=>{
-    e.stopPropagation();t=STEP_T[i];lastTs=null;
-    if(running){running=false;btnPlay.textContent='Play';}draw(t);
+    e.stopPropagation();loopMode=false;running=false;btnLoop.textContent='↻ Loop';
+    t=STEP_T[i];lastTs=null;draw(t);
   });
 });
-running=false;btnPlay.textContent='Play';draw(0);
+draw(0);
 </script>
