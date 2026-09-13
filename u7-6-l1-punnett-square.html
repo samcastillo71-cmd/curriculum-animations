@@ -309,7 +309,7 @@ const btnLoop=document.getElementById('btn-loop');
 const btnHalf=document.getElementById('btn-half');
 function updateToggles(){
   btnLoop.classList.toggle('sec',loopMode==='off');
-  btnLoop.textContent=loopMode==='phase'?'↻1':loopMode==='animation'?'↻∞':'↻';
+  btnLoop.textContent=loopMode==='phase'?'↻ PHASE':loopMode==='animation'?'↻ ALL':'↻';
   btnHalf.classList.toggle('sec',!halfSpeed);btnHalf.textContent=halfSpeed?'0.5':'1.0';
 }
 function setPhaseAround(tval){
