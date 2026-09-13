@@ -58,7 +58,7 @@
     <button id="btn-back" class="sec">←</button>
     <button id="btn-loop" class="sec">↻</button>
     <button id="btn-half" class="sec">1.0</button>
-    <button id="btn-next">→</button>
+    <button id="btn-next" class="sec">→</button>
   </div>
 </div>
 
@@ -576,6 +576,9 @@ const PAUSE_T=[0.37,0.55,0.73,0.96];
 let t=0,running=false,lastTs=null,loopMode='off',halfSpeed=false,pauseTarget=null,reverse=false,phaseStart=0,phaseEnd=0;
 const btnLoop=document.getElementById('btn-loop');
 const btnHalf=document.getElementById('btn-half');
+const btnBack=document.getElementById('btn-back');
+const btnNext=document.getElementById('btn-next');
+function flash(btn){btn.classList.remove('sec');setTimeout(()=>btn.classList.add('sec'),200);}
 function updateToggles(){
   btnLoop.classList.toggle('sec',loopMode==='off');
   btnLoop.textContent=loopMode==='phase'?'↻ PHASE':loopMode==='animation'?'↻ ALL':'↻';
@@ -627,9 +630,9 @@ btnLoop.addEventListener('click',()=>{
   updateToggles();
 });
 btnHalf.addEventListener('click',()=>{halfSpeed=!halfSpeed;updateToggles();});
-document.getElementById('btn-back').addEventListener('click',backStep);
-document.getElementById('btn-next').addEventListener('click',advanceStep);
-document.getElementById('cvs').addEventListener('click',advanceStep);
+btnBack.addEventListener('click',()=>{flash(btnBack);backStep();});
+btnNext.addEventListener('click',()=>{flash(btnNext);advanceStep();});
+document.getElementById('cvs').addEventListener('click',()=>{flash(btnNext);advanceStep();});
 const STEP_T=[0.34,0.44,0.62,0.90];
 ['s0','s1','s2','s3'].forEach((id,i)=>{
   document.getElementById(id).addEventListener('click',e=>{
@@ -638,8 +641,8 @@ const STEP_T=[0.34,0.44,0.62,0.90];
   });
 });
 document.addEventListener('keydown',e=>{
-  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();advanceStep();}
-  else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();backStep();}
+  if(e.key==='ArrowRight'||e.key===' '||e.key==='PageDown'){e.preventDefault();flash(btnNext);advanceStep();}
+  else if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();flash(btnBack);backStep();}
 });
 draw(0);
 </script>
