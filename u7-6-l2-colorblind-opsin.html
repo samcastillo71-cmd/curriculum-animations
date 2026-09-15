@@ -235,13 +235,13 @@ function drawProtein(cy,cx,nm,opsin,act,perceivedCol,animT){
   ctx.fillStyle=pGrad;ctx.fill();
 
   // Retinal chromophore: bent (11-cis) → straight (all-trans) on absorption
-  const bend=(1-act)*pocketR*.6,len=pocketR*.8;
+  const bend=(1-act)*pocketR*1.2,len=pocketR*.8;
   const retG=Math.round(lerp(140,200,act));
   const blendAmt=act*absorbAlpha*1.5;
   const retR2=Math.round(lerp(255,wr,cl01(blendAmt)));
   const retB2=Math.round(lerp(18,wb,cl01(blendAmt)));
   ctx.strokeStyle=`rgba(${retR2},${retG},${retB2},${.78+act*.2})`;
-  ctx.lineWidth=2;ctx.shadowColor=`rgba(${retR2},${retG},${retB2},.5)`;ctx.shadowBlur=4;
+  ctx.lineWidth=2.5;ctx.shadowColor=`rgba(${retR2},${retG},${retB2},.5)`;ctx.shadowBlur=4;
   ctx.beginPath();ctx.moveTo(cx-len,cy+bend*.4);ctx.quadraticCurveTo(cx,cy-bend,cx+len,cy+bend*.4);ctx.stroke();
   ctx.shadowBlur=0;
 
