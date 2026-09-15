@@ -242,7 +242,7 @@ function drawProtein(cy,nm,opsin,act,perceivedCol,animT){
 
   // Signal dot emerging from cytoplasmic gap
   const connP=ease(ph(animT,.52,.72));
-  if(act>.18&&connP>.5){
+  if(act>.04&&connP>.5){
     const pulse=.55+.45*Math.sin(animT*35);
     ctx.fillStyle=`rgba(80,215,195,${ease(connP)*.9*pulse})`;
     ctx.shadowColor='rgba(80,215,195,.75)';ctx.shadowBlur=7;
@@ -288,17 +288,18 @@ function drawProtein(cy,nm,opsin,act,perceivedCol,animT){
 }
 
 // ── Signal pulse (right-traveling) — style matches cone-cell-opsin ──
-function drawSignalPulse(cy,color,animT){
+function drawSignalPulse(cy,color,act,animT){
   const p=ph(animT,.70,.90);
   if(p<=0||p>=1) return;
   const x=lerp(SIG_X0,SIG_X1,ease(p));
   const[r,g,b]=color;
+  const s=Math.max(.18,act); // scale by activation; min so weak signals stay visible
   ctx.save();
   const pg=ctx.createRadialGradient(x,cy,0,x,cy,11);
-  pg.addColorStop(0,`rgba(${r},${g},${b},.70)`);
+  pg.addColorStop(0,`rgba(${r},${g},${b},${.70*s})`);
   pg.addColorStop(1,`rgba(${r},${g},${b},0)`);
   ctx.fillStyle=pg;ctx.beginPath();ctx.arc(x,cy,11,0,Math.PI*2);ctx.fill();
-  ctx.fillStyle=`rgba(${r},${g},${b},.88)`;
+  ctx.fillStyle=`rgba(${r},${g},${b},${.88*s})`;
   ctx.beginPath();ctx.arc(x,cy,3.5,0,Math.PI*2);ctx.fill();
   ctx.restore();
 }
@@ -414,13 +415,13 @@ function draw(){
   // Row 1 — Becky
   drawSineWave(CY_TOP,selectedNm,aT);
   drawProtein(CY_TOP,selectedNm,OPSIN_NORM,normAct*actGate,normPerceived,aT);
-  if(normAct>.08) drawSignalPulse(CY_TOP,normPerceived,aT);
+  if(normAct>.01) drawSignalPulse(CY_TOP,normPerceived,normAct,aT);
   drawBrainBox(CY_TOP,'brain sees:',normPerceived,ease(ph(aT,.85,1.0)));
 
   // Row 2 — Joe
   drawSineWave(CY_BOT,selectedNm,aT);
   drawProtein(CY_BOT,selectedNm,altO,altAct*actGate,altPerceived,aT);
-  if(altAct>.08) drawSignalPulse(CY_BOT,altPerceived,aT);
+  if(altAct>.01) drawSignalPulse(CY_BOT,altPerceived,altAct,aT);
   drawBrainBox(CY_BOT,'brain sees:',altPerceived,ease(ph(aT,.85,1.0)));
 
   drawPills();
