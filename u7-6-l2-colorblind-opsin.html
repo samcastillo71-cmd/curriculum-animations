@@ -331,7 +331,7 @@ function drawSlider(nm){
   });
 
   // Axis ticks above bar
-  ctx.fillStyle='rgba(140,155,180,.75)';ctx.font='5px system-ui';ctx.textAlign='center';
+  ctx.fillStyle='rgba(140,155,180,.75)';ctx.font='6px system-ui';ctx.textAlign='center';
   [400,500,600,700].forEach(tnm=>{
     const tx=x+w*(tnm-380)/320;
     ctx.fillText(tnm+'nm',tx,y-4);
@@ -339,7 +339,7 @@ function drawSlider(nm){
 
   const selX=x+w*(nm-380)/320;
   ctx.fillStyle='#fff';ctx.strokeStyle='rgba(0,0,0,.4)';ctx.lineWidth=1;
-  ctx.beginPath();ctx.arc(selX,y+h/2,h*.72,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.beginPath();ctx.arc(selX,y+h/2,h*.45,0,Math.PI*2);ctx.fill();ctx.stroke();
   ctx.fillStyle='rgba(140,155,180,.9)';ctx.font='bold 7px system-ui';ctx.textAlign='center';
   ctx.fillText(nm+'nm',selX,y-2);
 }
