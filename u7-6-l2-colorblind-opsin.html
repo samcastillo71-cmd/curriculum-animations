@@ -125,7 +125,7 @@ const DT_PROT=[{nm:400,c:[88,42,192]},{nm:450,c:[18,72,228]},{nm:530,c:[55,172,3
 const DT_TRIT=[{nm:400,c:[28,22,8]},{nm:450,c:[22,72,28]},{nm:530,c:[62,192,38]},{nm:580,c:[232,172,18]},{nm:620,c:[218,98,18]},{nm:660,c:[208,52,14]}];
 
 // ── State ─────────────────────────────────────────────────────
-let selectedNm=530,cbType='deut',t=0,lastTs=null,loopOn=true;
+let selectedNm=530,cbType='deut',t=0,lastTs=null,loopOn=true,waveT=0;
 const PLAY_LABEL='▶ Play',PAUSE_LABEL='⏸ Pause';
 
 // ── Helpers ───────────────────────────────────────────────────
@@ -182,7 +182,7 @@ function drawSineWave(cy,nm,animT){
   const freq=lerp(.20,.028,lam);       // wide range: violet tight/rapid, red slow/long
   const amp=13;                         // bigger amplitude so frequency differences pop
   const headX=lerp(WAVE_X0,WAVE_X1,wP);
-  const phase=animT*40;
+  const phase=waveT*5.3;
 
   ctx.save();
   ctx.strokeStyle=`rgba(${r},${g},${b},${alpha})`;ctx.lineWidth=2.2;
@@ -421,7 +421,9 @@ function draw(){
 const CYCLE=7.5;
 function tick(ts){
   if(!lastTs) lastTs=ts;
-  if(loopOn&&t<1) t=Math.min(1,t+(ts-lastTs)/1000/CYCLE);
+  const dt=(ts-lastTs)/1000;
+  if(loopOn&&t<1) t=Math.min(1,t+dt/CYCLE);
+  waveT+=dt;
   lastTs=ts;draw();
   requestAnimationFrame(tick);
 }
