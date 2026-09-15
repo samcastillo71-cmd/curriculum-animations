@@ -270,19 +270,14 @@ function drawProtein(cy,nm,opsin,act,perceivedCol,animT){
     ctx.beginPath();ctx.arc(cx,cy,meterR,-Math.PI/2,-Math.PI/2+act*Math.PI*2);
     ctx.strokeStyle=`rgba(${wr},${wg},${wb},.82)`;ctx.lineWidth=2;ctx.stroke();
   }
-  // Peak label above the arc at 12 o'clock — anchors "full" to the opsin's peak wavelength
-  ctx.fillStyle='rgba(130,140,165,.70)';ctx.font='6px system-ui';ctx.textAlign='center';
-  ctx.fillText(`100% at ${opsin.peak}nm`,cx,cy-meterR-4);
-
-  // Label: name + peak wavelength
+  // Label above protein — opsin name + peak, positioned above the arc
   ctx.fillStyle='rgba(130,140,165,.88)';ctx.font='7.5px system-ui';ctx.textAlign='center';
-  ctx.fillText(`${opsin.label} · ${opsin.peak}nm`,cx,cy+PROT_DISC_R+9);
+  ctx.fillText(`${opsin.label} · ${opsin.peak}nm`,cx,cy-meterR-5);
 
-  // Tiny peak-color swatch
+  // Tiny peak-color swatch below protein — shifted below arc bottom to avoid overlap
   const[pr,pg,pb]=spectralRGB(opsin.peak);
   ctx.fillStyle=`rgb(${pr},${pg},${pb})`;
-  ctx.beginPath();ctx.arc(cx,cy+PROT_DISC_R+18,3.5,0,Math.PI*2);ctx.fill();
-  ctx.strokeStyle='rgba(255,255,255,.25)';ctx.lineWidth=.8;ctx.stroke();
+  ctx.beginPath();ctx.arc(cx,cy+PROT_DISC_R+15,3.5,0,Math.PI*2);ctx.fill();
 
   ctx.restore();
 }
