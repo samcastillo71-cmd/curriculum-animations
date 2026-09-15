@@ -58,19 +58,18 @@ const CY_TOP=120;          // Becky row center y
 const CY_BOT=270;          // Joe row center y
 const DIVIDER_Y=(CY_TOP+CY_BOT)/2; // 161.5
 
-// Protein sits at horizontal center
-const PROT_X=W/2;          // 340
-const OP_R=26, OP_HR=9;    // helix ring radius and helix disc size
-const PROT_DISC_R=OP_R+OP_HR+10; // outer membrane disc radius (~45)
+// Three opsins per row: S (blue), M (green), L (red) — left to right
+const PROT_XS=[270,340,410];
+const PROT_DISC_R=22;
 
-// Wave enters from left edge, arrives at protein
+// Wave enters from left, arrives at protein zone
 const WAVE_X0=10;
-const WAVE_X1=PROT_X-PROT_DISC_R-5;
+const WAVE_X1=PROT_XS[0]-PROT_DISC_R-5; // 243
 
-// Signal travels right from protein to brain box
-const SIG_X0=PROT_X+PROT_DISC_R+5;
-const SIG_X1=462;
-const BOX_CX=556, BOX_HW=92, BOX_HH=27;
+// Signal travels right from protein zone to brain box
+const SIG_X0=PROT_XS[2]+PROT_DISC_R+5;  // 437
+const SIG_X1=470;
+const BOX_CX=562, BOX_HW=88, BOX_HH=27;
 
 // Slider
 const SL_X=36,SL_Y=9,SL_W=608,SL_H=11;
@@ -92,11 +91,27 @@ const CB_TYPES=[
   {id:'trit',label:'Tritanopia',  common:'blue-yellow'},
 ];
 
-const OPSIN_NORM={peak:530,sigma:55,label:'green opsin',col:[35,185,55]};
-const OPSIN_ALT={
-  deut:{peak:560,sigma:60,label:'altered opsin',col:[165,108,25]},
-  prot:{peak:530,sigma:55,label:'altered opsin',col:[120,148,22]},
-  trit:{peak:490,sigma:50,label:'altered opsin',col:[22,148,120]},
+const OPSINS_NORM=[
+  {peak:420,sigma:25,label:'blue opsin', col:[80,60,220]},
+  {peak:530,sigma:55,label:'green opsin',col:[35,185,55]},
+  {peak:560,sigma:60,label:'red opsin',  col:[210,55,40]},
+];
+const OPSINS_ALT={
+  deut:[
+    {peak:420,sigma:25,label:'blue opsin', col:[80,60,220]},
+    {peak:560,sigma:60,label:'altered (M)',col:[175,85,30]},
+    {peak:560,sigma:60,label:'red opsin',  col:[210,55,40]},
+  ],
+  prot:[
+    {peak:420,sigma:25,label:'blue opsin', col:[80,60,220]},
+    {peak:530,sigma:55,label:'green opsin',col:[35,185,55]},
+    {peak:530,sigma:55,label:'altered (L)',col:[130,155,25]},
+  ],
+  trit:[
+    {peak:490,sigma:40,label:'altered (S)',col:[28,135,185]},
+    {peak:530,sigma:55,label:'green opsin',col:[35,185,55]},
+    {peak:560,sigma:60,label:'red opsin',  col:[210,55,40]},
+  ],
 };
 
 const DT_DEUT=[{nm:400,c:[100,40,200]},{nm:450,c:[10,52,248]},{nm:530,c:[133,122,0]},{nm:580,c:[210,192,0]},{nm:620,c:[162,128,0]},{nm:660,c:[130,119,0]}];
@@ -180,18 +195,18 @@ function drawSineWave(cy,nm,animT){
   ctx.restore();
 }
 
-// ── Opsin protein (centered at PROT_X, cy) ───────────────────
-function drawProtein(cy,nm,opsin,act,perceivedCol,animT){
-  const cx=PROT_X;
+// ── Opsin protein (at cx, cy) ─────────────────────────────────
+function drawProtein(cy,cx,nm,opsin,act,perceivedCol,animT){
   const oc=opsin.col;
   const[wr,wg,wb]=spectralRGB(nm);
+  const pocketR=PROT_DISC_R*.55; // inner pocket radius
 
   ctx.save();
 
   // Outer membrane disc
   ctx.beginPath();ctx.arc(cx,cy,PROT_DISC_R,0,Math.PI*2);
   ctx.fillStyle='rgba(20,40,80,.12)';ctx.fill();
-  ctx.strokeStyle='rgba(80,110,160,.22)';ctx.lineWidth=1;ctx.stroke();
+  ctx.strokeStyle='rgba(80,110,160,.25)';ctx.lineWidth=1;ctx.stroke();
 
   // Absorption glow — incoming light floods the pocket
   const absorbRise=ease(ph(animT,.22,.42));
@@ -199,85 +214,59 @@ function drawProtein(cy,nm,opsin,act,perceivedCol,animT){
   const absorbAlpha=absorbRise*(1-absorbFall)*act;
   if(absorbAlpha>.02){
     const aGrad=ctx.createRadialGradient(cx,cy,0,cx,cy,PROT_DISC_R);
-    aGrad.addColorStop(0,`rgba(${wr},${wg},${wb},${absorbAlpha*.8})`);
-    aGrad.addColorStop(.4,`rgba(${wr},${wg},${wb},${absorbAlpha*.35})`);
+    aGrad.addColorStop(0,`rgba(${wr},${wg},${wb},${absorbAlpha*.85})`);
     aGrad.addColorStop(1,'rgba(0,0,0,0)');
     ctx.beginPath();ctx.arc(cx,cy,PROT_DISC_R,0,Math.PI*2);
     ctx.fillStyle=aGrad;ctx.fill();
   }
 
-  // Inner binding pocket — opsin-colored environment shows spectral tuning
-  // The amino acid environment around retinal (not retinal itself) sets the peak
-  const pocketR=OP_R*.82;
-  const pGrad=ctx.createRadialGradient(cx,cy,0,cx,cy,pocketR*1.5);
-  pGrad.addColorStop(0,`rgba(${oc[0]},${oc[1]},${oc[2]},.22)`);
-  pGrad.addColorStop(.55,`rgba(${oc[0]},${oc[1]},${oc[2]},.07)`);
+  // Opsin pocket — colored by amino acid environment (sets spectral peak)
+  const pGrad=ctx.createRadialGradient(cx,cy,0,cx,cy,pocketR*1.6);
+  pGrad.addColorStop(0,`rgba(${oc[0]},${oc[1]},${oc[2]},.32)`);
   pGrad.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.beginPath();ctx.arc(cx,cy,pocketR*1.5,0,Math.PI*2);
+  ctx.beginPath();ctx.arc(cx,cy,pocketR*1.6,0,Math.PI*2);
   ctx.fillStyle=pGrad;ctx.fill();
 
-  // 7 TM helices — neutral color (same for all opsins; pocket environment sets the peak, not helix color)
-  const shift=act*5;
-  TM_DEG.forEach((deg,i)=>{
-    const a=deg*Math.PI/180;
-    const os=TM_SHIFT.includes(i)?shift:0;
-    const hx=cx+Math.cos(a)*(OP_R+os),hy=cy+Math.sin(a)*(OP_R+os);
-    const grad=ctx.createRadialGradient(hx-OP_HR*.4,hy-OP_HR*.4,0,hx,hy,OP_HR+3);
-    grad.addColorStop(0,'rgb(150,170,210)');
-    grad.addColorStop(1,'rgb(40,50,72)');
-    ctx.fillStyle=grad;ctx.strokeStyle='rgba(0,0,0,.3)';ctx.lineWidth=.9;
-    ctx.beginPath();ctx.arc(hx,hy,OP_HR,0,Math.PI*2);ctx.fill();ctx.stroke();
-  });
-
   // Retinal chromophore: bent (11-cis) → straight (all-trans) on absorption
-  const bend=(1-act)*OP_R*.44,len=OP_R*.65;
+  const bend=(1-act)*pocketR*.6,len=pocketR*.8;
   const retG=Math.round(lerp(140,200,act));
   const blendAmt=act*absorbAlpha*1.5;
-  const retR=Math.round(lerp(255,wr,cl01(blendAmt)));
-  const retB=Math.round(lerp(18,wb,cl01(blendAmt)));
-  ctx.strokeStyle=`rgba(${retR},${retG},${retB},${.75+act*.22})`;
-  ctx.lineWidth=3;ctx.shadowColor=`rgba(${retR},${retG},${retB},.5)`;ctx.shadowBlur=5;
+  const retR2=Math.round(lerp(255,wr,cl01(blendAmt)));
+  const retB2=Math.round(lerp(18,wb,cl01(blendAmt)));
+  ctx.strokeStyle=`rgba(${retR2},${retG},${retB2},${.78+act*.2})`;
+  ctx.lineWidth=2;ctx.shadowColor=`rgba(${retR2},${retG},${retB2},.5)`;ctx.shadowBlur=4;
   ctx.beginPath();ctx.moveTo(cx-len,cy+bend*.4);ctx.quadraticCurveTo(cx,cy-bend,cx+len,cy+bend*.4);ctx.stroke();
   ctx.shadowBlur=0;
-
-  // Signal dot emerging from cytoplasmic gap
-  const connP=ease(ph(animT,.52,.72));
-  if(act>.04&&connP>.5){
-    const pulse=.55+.45*Math.sin(animT*35);
-    ctx.fillStyle=`rgba(80,215,195,${ease(connP)*.9*pulse})`;
-    ctx.shadowColor='rgba(80,215,195,.75)';ctx.shadowBlur=7;
-    ctx.beginPath();ctx.arc(cx+OP_R+shift+5,cy,3,0,Math.PI*2);ctx.fill();
-    ctx.shadowBlur=0;
-  }
 
   // Pocket flash with perceived color when signal fires
   const sigFlash=ease(ph(animT,.68,.75))*(1-ease(ph(animT,.75,.84)))*act;
   if(sigFlash>.02){
     const[pcr,pcg,pcb]=perceivedCol;
-    const fg=ctx.createRadialGradient(cx,cy,0,cx,cy,OP_R*1.2);
+    const fg=ctx.createRadialGradient(cx,cy,0,cx,cy,PROT_DISC_R);
     fg.addColorStop(0,`rgba(${pcr},${pcg},${pcb},${sigFlash*.75})`);
     fg.addColorStop(1,'rgba(0,0,0,0)');
-    ctx.beginPath();ctx.arc(cx,cy,OP_R*1.2,0,Math.PI*2);
+    ctx.beginPath();ctx.arc(cx,cy,PROT_DISC_R,0,Math.PI*2);
     ctx.fillStyle=fg;ctx.fill();
   }
 
-  // Activation meter — arc outside disc, sweeps clockwise from top proportional to act
-  // Same wavelength color as the incoming light; same pattern both rows, different fill = different opsin
+  // Activation meter arc — sweeps clockwise from top proportional to act
   const meterR=PROT_DISC_R+5;
   ctx.beginPath();ctx.arc(cx,cy,meterR,0,Math.PI*2);
   ctx.strokeStyle='rgba(80,100,140,.18)';ctx.lineWidth=2;ctx.stroke();
   if(act>.01){
     ctx.beginPath();ctx.arc(cx,cy,meterR,-Math.PI/2,-Math.PI/2+act*Math.PI*2);
-    ctx.strokeStyle=`rgba(${wr},${wg},${wb},.82)`;ctx.lineWidth=2;ctx.stroke();
+    ctx.strokeStyle=`rgba(${wr},${wg},${wb},.85)`;ctx.lineWidth=2;ctx.stroke();
   }
-  // Label above protein — opsin name + peak, positioned above the arc
-  ctx.fillStyle='rgba(130,140,165,.88)';ctx.font='7.5px system-ui';ctx.textAlign='center';
-  ctx.fillText(`${opsin.label} · ${opsin.peak}nm`,cx,cy-meterR-5);
 
-  // Tiny peak-color swatch below protein — shifted below arc bottom to avoid overlap
+  // Label above arc: short name + peak wavelength
+  const shortName=opsin.label.split(' ')[0];
+  ctx.fillStyle='rgba(130,140,165,.88)';ctx.font='6px system-ui';ctx.textAlign='center';
+  ctx.fillText(`${shortName} · ${opsin.peak}nm`,cx,cy-meterR-4);
+
+  // Peak-color swatch dot below disc
   const[pr,pg,pb]=spectralRGB(opsin.peak);
   ctx.fillStyle=`rgb(${pr},${pg},${pb})`;
-  ctx.beginPath();ctx.arc(cx,cy+PROT_DISC_R+15,3.5,0,Math.PI*2);ctx.fill();
+  ctx.beginPath();ctx.arc(cx,cy+PROT_DISC_R+10,3,0,Math.PI*2);ctx.fill();
 
   ctx.restore();
 }
@@ -396,10 +385,12 @@ function draw(){
   ctx.fillStyle=isDark?'#0D1830':'#FFFFFF';ctx.fillRect(0,0,W,H);
 
   const aT=t;
-  const normAct=gaussian(selectedNm,OPSIN_NORM.peak,OPSIN_NORM.sigma);
-  const altO=OPSIN_ALT[cbType];
-  const altAct=gaussian(selectedNm,altO.peak,altO.sigma);
+  const altOpsins=OPSINS_ALT[cbType];
+  const normActs=OPSINS_NORM.map(o=>gaussian(selectedNm,o.peak,o.sigma));
+  const altActs=altOpsins.map(o=>gaussian(selectedNm,o.peak,o.sigma));
   const actGate=ease(ph(aT,.25,.56));
+  const maxNormAct=Math.max(...normActs);
+  const maxAltAct=Math.max(...altActs);
 
   drawLayout();
   drawSlider(selectedNm);
@@ -409,14 +400,14 @@ function draw(){
 
   // Row 1 — Becky
   drawSineWave(CY_TOP,selectedNm,aT);
-  drawProtein(CY_TOP,selectedNm,OPSIN_NORM,normAct*actGate,normPerceived,aT);
-  if(normAct>.01) drawSignalPulse(CY_TOP,normPerceived,normAct,aT);
+  OPSINS_NORM.forEach((o,i)=>drawProtein(CY_TOP,PROT_XS[i],selectedNm,o,normActs[i]*actGate,normPerceived,aT));
+  if(maxNormAct>.01) drawSignalPulse(CY_TOP,normPerceived,maxNormAct,aT);
   drawBrainBox(CY_TOP,'brain sees:',normPerceived,ease(ph(aT,.85,1.0)));
 
   // Row 2 — Joe
   drawSineWave(CY_BOT,selectedNm,aT);
-  drawProtein(CY_BOT,selectedNm,altO,altAct*actGate,altPerceived,aT);
-  if(altAct>.01) drawSignalPulse(CY_BOT,altPerceived,altAct,aT);
+  altOpsins.forEach((o,i)=>drawProtein(CY_BOT,PROT_XS[i],selectedNm,o,altActs[i]*actGate,altPerceived,aT));
+  if(maxAltAct>.01) drawSignalPulse(CY_BOT,altPerceived,maxAltAct,aT);
   drawBrainBox(CY_BOT,'brain sees:',altPerceived,ease(ph(aT,.85,1.0)));
 
   drawPills();
