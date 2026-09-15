@@ -37,6 +37,7 @@
 </header>
 <div class="card">
   <canvas id="cvs"></canvas>
+  <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:-.2rem">Arc = protein activation strength &nbsp;·&nbsp; Brain box = perceived color</p>
   <div class="controls">
     <button id="btnLoop" class="sec">⏸ Pause</button>
     <button id="btnRestart" class="sec">⟳ Restart</button>
@@ -380,7 +381,7 @@ function drawPills(){
     ctx.font=(active?'bold ':'')+'7.5px system-ui';
     ctx.fillStyle=active?'#fff':'rgba(140,165,205,.8)';ctx.textAlign='center';
     ctx.fillText(p.label,px+PILL_W/2,PILL_CY-2);
-    ctx.font='6px system-ui';
+    ctx.font='7px system-ui';
     ctx.fillStyle=active?'rgba(255,255,255,.72)':'rgba(120,148,190,.65)';
     ctx.fillText(p.common,px+PILL_W/2,PILL_CY+7);
     ctx.restore();
