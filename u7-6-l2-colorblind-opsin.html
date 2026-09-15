@@ -264,10 +264,11 @@ function drawProtein(cy,cx,nm,opsin,act,perceivedCol,animT){
     ctx.strokeStyle=`rgba(${wr},${wg},${wb},.85)`;ctx.lineWidth=2;ctx.stroke();
   }
 
-  // Label above arc: short name + peak wavelength
+  // Peak nm above arc, color name below disc
   const shortName=opsin.label.split(' ')[0];
   ctx.fillStyle='rgba(130,140,165,.88)';ctx.font='6px system-ui';ctx.textAlign='center';
-  ctx.fillText(`${shortName} · ${opsin.peak}nm`,cx,cy-meterR-4);
+  ctx.fillText(`${opsin.peak}nm`,cx,cy-meterR-4);
+  ctx.fillText(shortName.toUpperCase(),cx,cy+meterR+9);
 
   ctx.restore();
 }
