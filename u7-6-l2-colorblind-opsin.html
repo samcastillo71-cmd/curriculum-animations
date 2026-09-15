@@ -269,6 +269,7 @@ function drawProtein(cy,cx,nm,opsin,act,perceivedCol,animT){
   ctx.fillStyle='rgba(130,140,165,.88)';ctx.font='6px system-ui';ctx.textAlign='center';
   ctx.fillText(`${opsin.peak}nm`,cx,cy-meterR-4);
   ctx.fillText(shortName.toUpperCase(),cx,cy+meterR+9);
+  ctx.fillText('OPSIN',cx,cy+meterR+17);
 
   ctx.restore();
 }
