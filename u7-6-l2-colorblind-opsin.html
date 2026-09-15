@@ -37,7 +37,7 @@
 </header>
 <div class="card">
   <canvas id="cvs"></canvas>
-  <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:-.2rem">Arc = activation strength &nbsp;·&nbsp; nm = peak sensitivity &nbsp;·&nbsp; Brain box = perceived color</p>
+  <p style="font-size:.72rem;color:var(--muted);text-align:center;margin-top:-.2rem">Arc = activation strength &nbsp;·&nbsp; nm = peak sensitivity &nbsp;·&nbsp; Bent line = retinal (straightens when light is absorbed) &nbsp;·&nbsp; Brain box = perceived color</p>
   <div class="controls">
     <button id="btnLoop" class="sec">⏸ Pause</button>
     <button id="btnRestart" class="sec">⟳ Restart</button>
@@ -276,12 +276,22 @@ function drawProtein(cy,cx,nm,opsin,act,perceivedCol,animT){
 
 // ── Signal pulse (right-traveling) — style matches cone-cell-opsin ──
 function drawSignalPulse(cy,color,act,animT){
-  const p=ph(animT,.70,.90);
+  const p=ph(animT,.70,.84);
   if(p<=0||p>=1) return;
   const x=lerp(SIG_X0,SIG_X1,ease(p));
   const[r,g,b]=color;
-  const s=Math.max(.18,act); // scale by activation; min so weak signals stay visible
+  const s=Math.max(.18,act);
   ctx.save();
+  // Comet tail — three faded glows trailing the head
+  [18,12,6].forEach((off,i)=>{
+    const tx=Math.max(SIG_X0,x-off);
+    const a=(i+1)/5*.55*s;
+    const tg=ctx.createRadialGradient(tx,cy,0,tx,cy,9+off*.35);
+    tg.addColorStop(0,`rgba(${r},${g},${b},${a})`);
+    tg.addColorStop(1,`rgba(${r},${g},${b},0)`);
+    ctx.fillStyle=tg;ctx.beginPath();ctx.arc(tx,cy,9+off*.35,0,Math.PI*2);ctx.fill();
+  });
+  // Head
   const pg=ctx.createRadialGradient(x,cy,0,x,cy,11);
   pg.addColorStop(0,`rgba(${r},${g},${b},${.70*s})`);
   pg.addColorStop(1,`rgba(${r},${g},${b},0)`);
