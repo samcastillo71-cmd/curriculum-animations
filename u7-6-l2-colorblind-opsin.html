@@ -58,16 +58,22 @@ const CY_TOP=120;          // Becky row center y
 const CY_BOT=270;          // Joe row center y
 const DIVIDER_Y=(CY_TOP+CY_BOT)/2; // 161.5
 
-// Three opsins per row: S (blue), M (green), L (red) — left to right
-const PROT_XS=[270,340,410];
+// Three opsins per row in a triangle: M top-center, S bottom-left, L bottom-right
+const PROT_MID_X=W/2;
+const PROT_H=55,PROT_V=20; // horizontal and vertical offsets from row center
+const PROT_POS=[
+  [PROT_MID_X-PROT_H, +PROT_V], // S-cone (blue) — bottom left
+  [PROT_MID_X,        -PROT_V], // M-cone (green) — top center
+  [PROT_MID_X+PROT_H, +PROT_V], // L-cone (red) — bottom right
+];
 const PROT_DISC_R=22;
 
 // Wave enters from left, arrives at protein zone
 const WAVE_X0=10;
-const WAVE_X1=PROT_XS[0]-PROT_DISC_R-5; // 243
+const WAVE_X1=PROT_POS[0][0]-PROT_DISC_R-5; // 258
 
 // Signal travels right from protein zone to brain box
-const SIG_X0=PROT_XS[2]+PROT_DISC_R+5;  // 437
+const SIG_X0=PROT_POS[2][0]+PROT_DISC_R+5;  // 422
 const SIG_X1=470;
 const BOX_CX=562, BOX_HW=88, BOX_HH=27;
 
@@ -400,13 +406,13 @@ function draw(){
 
   // Row 1 — Becky
   drawSineWave(CY_TOP,selectedNm,aT);
-  OPSINS_NORM.forEach((o,i)=>drawProtein(CY_TOP,PROT_XS[i],selectedNm,o,normActs[i]*actGate,normPerceived,aT));
+  OPSINS_NORM.forEach((o,i)=>drawProtein(CY_TOP+PROT_POS[i][1],PROT_POS[i][0],selectedNm,o,normActs[i]*actGate,normPerceived,aT));
   if(maxNormAct>.01) drawSignalPulse(CY_TOP,normPerceived,maxNormAct,aT);
   drawBrainBox(CY_TOP,'brain sees:',normPerceived,ease(ph(aT,.85,1.0)));
 
   // Row 2 — Joe
   drawSineWave(CY_BOT,selectedNm,aT);
-  altOpsins.forEach((o,i)=>drawProtein(CY_BOT,PROT_XS[i],selectedNm,o,altActs[i]*actGate,altPerceived,aT));
+  altOpsins.forEach((o,i)=>drawProtein(CY_BOT+PROT_POS[i][1],PROT_POS[i][0],selectedNm,o,altActs[i]*actGate,altPerceived,aT));
   if(maxAltAct>.01) drawSignalPulse(CY_BOT,altPerceived,maxAltAct,aT);
   drawBrainBox(CY_BOT,'brain sees:',altPerceived,ease(ph(aT,.85,1.0)));
 
