@@ -267,7 +267,9 @@ function drawProtein(cy,cx,nm,opsin,act,perceivedCol,animT){
 
   // Peak nm above arc, color name below disc
   const shortName=opsin.label.split(' ')[0];
-  ctx.fillStyle='rgba(220,230,245,.95)';ctx.font='6px system-ui';ctx.textAlign='center';
+  const isAltered=opsin.label.includes('altered');
+  ctx.fillStyle=isAltered?'rgba(220,155,60,.95)':'rgba(220,230,245,.95)';
+  ctx.font='6px system-ui';ctx.textAlign='center';
   ctx.fillText(shortName.toUpperCase()+' ('+opsin.peak+'nm)',cx,cy+meterR+9);
   ctx.fillText('OPSIN',cx,cy+meterR+17);
 
