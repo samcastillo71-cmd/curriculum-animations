@@ -32,7 +32,7 @@
 </style>
 
 <header>
-  <h1>Unit 7.6 · L2 &mdash; Why Joe Sees Colors Differently</h1>
+  <h1>Color Vision &amp; Colorblindness</h1>
   <p class="subtitle">Colorblindness &mdash; the opsin protein mechanism</p>
 </header>
 <div class="card">
@@ -267,9 +267,8 @@ function drawProtein(cy,cx,nm,opsin,act,perceivedCol,animT){
 
   // Peak nm above arc, color name below disc
   const shortName=opsin.label.split(' ')[0];
-  ctx.fillStyle='rgba(130,140,165,.88)';ctx.font='6px system-ui';ctx.textAlign='center';
-  ctx.fillText(`${opsin.peak}nm`,cx,cy-meterR-4);
-  ctx.fillText(shortName.toUpperCase(),cx,cy+meterR+9);
+  ctx.fillStyle='rgba(220,230,245,.95)';ctx.font='6px system-ui';ctx.textAlign='center';
+  ctx.fillText(shortName.toUpperCase()+' ('+opsin.peak+'nm)',cx,cy+meterR+9);
   ctx.fillText('OPSIN',cx,cy+meterR+17);
 
   ctx.restore();
@@ -298,7 +297,7 @@ function drawBrainBox(cy,rowLabel,color,alpha){
   ctx.save();
   ctx.fillStyle='rgba(15,28,55,.72)';ctx.strokeStyle='rgba(70,95,145,.4)';ctx.lineWidth=1;
   rr(x,y,w,h,5);ctx.fill();ctx.stroke();
-  ctx.fillStyle='rgba(155,170,205,.7)';ctx.font='7px system-ui';ctx.textAlign='left';
+  ctx.fillStyle='rgba(200,215,235,.90)';ctx.font='7px system-ui';ctx.textAlign='left';
   ctx.fillText(rowLabel,x+5,y+10);
   const sw=w*.5,sh=h*.56,sy2=cy-sh/2+3;
   const[r,g,b]=color;
@@ -326,12 +325,12 @@ function drawSlider(nm){
     const lw=36,lh=14,lx=px-lw/2,ly=LABEL_Y+1;
     rr(lx,ly,lw,lh,7);
     ctx.fillStyle=active?`rgba(${r},${g},${b},.92)`:'rgba(40,55,90,.5)';ctx.fill();
-    ctx.font=(active?'bold ':'')+'8px system-ui';ctx.fillStyle=active?'#fff':'rgba(160,175,205,.7)';
+    ctx.font=(active?'bold ':'')+'8px system-ui';ctx.fillStyle=active?'#fff':'rgba(185,200,225,.85)';
     ctx.textAlign='center';ctx.fillText(NM_NAMES[p],px,ly+lh*.72);
   });
 
   // Axis ticks above bar
-  ctx.fillStyle='rgba(140,155,180,.75)';ctx.font='6px system-ui';ctx.textAlign='center';
+  ctx.fillStyle='rgba(180,195,220,.88)';ctx.font='6px system-ui';ctx.textAlign='center';
   [400,500,600,700].forEach(tnm=>{
     const tx=x+w*(tnm-380)/320;
     ctx.fillText(tnm+'nm',tx,y-2);
@@ -340,7 +339,7 @@ function drawSlider(nm){
   const selX=x+w*(nm-380)/320;
   ctx.fillStyle='#fff';ctx.strokeStyle='rgba(0,0,0,.4)';ctx.lineWidth=1;
   ctx.beginPath();ctx.arc(selX,y+h/2,h*.45,0,Math.PI*2);ctx.fill();ctx.stroke();
-  ctx.fillStyle='rgba(140,155,180,.9)';ctx.font='bold 7px system-ui';ctx.textAlign='center';
+  ctx.fillStyle='rgba(190,205,230,.95)';ctx.font='bold 7px system-ui';ctx.textAlign='center';
   ctx.fillText(nm+'nm',selX,y-2);
 }
 
@@ -354,10 +353,10 @@ function drawLayout(){
   // Row labels (above each row, left-aligned)
   ctx.font='bold 8px system-ui';ctx.textAlign='left';
   ctx.fillStyle='rgba(60,195,115,.92)';
-  ctx.fillText('Becky — Normal Vision',10,CY_TOP-35);
+  ctx.fillText('Normal Vision',10,CY_TOP-35);
   const cbLabel=CB_TYPES.find(c=>c.id===cbType).label;
   ctx.fillStyle='rgba(205,125,55,.92)';
-  ctx.fillText('Joe — '+cbLabel,10,CY_BOT-35);
+  ctx.fillText(cbLabel,10,CY_BOT-35);
   // Signal path guides
   [CY_TOP,CY_BOT].forEach(cy=>{
     ctx.strokeStyle='rgba(80,215,195,.1)';ctx.lineWidth=1;ctx.setLineDash([2,4]);
