@@ -329,9 +329,10 @@ function drawSlider(nm){
     ctx.textAlign='center';ctx.fillText(NM_NAMES[p],px,ly+lh*.72);
   });
 
-  // Axis ticks above bar
+  // Axis ticks above bar — skip any tick the selector sits on
   ctx.fillStyle='rgba(180,195,220,.88)';ctx.font='6px system-ui';ctx.textAlign='center';
   [400,500,600,700].forEach(tnm=>{
+    if(Math.abs(tnm-nm)<=15)return;
     const tx=x+w*(tnm-380)/320;
     ctx.fillText(tnm+'nm',tx,y-2);
   });
