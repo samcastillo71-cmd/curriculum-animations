@@ -173,9 +173,9 @@ function hexPath(x,y,r){
 // ── Sine wave (left → right) ──────────────────────────────────
 function drawSineWave(cy,nm,animT){
   const wP=ease(ph(animT,0,.30));       // head travel 0→1
-  const wF=ease(ph(animT,.28,.46));     // fade out 0→1
-  const alpha=1-wF;
-  if(alpha<.02) return;
+  const wF=ease(ph(animT,.28,.46));     // fade to dim 0→1
+  const alpha=lerp(1,.18,wF);          // fades to dim, stays visible throughout
+  if(alpha<.01) return;
 
   const[r,g,b]=spectralRGB(nm);
   const lam=(nm-400)/300;              // 0=violet, 1=red
@@ -193,7 +193,8 @@ function drawSineWave(cy,nm,animT){
     if(first){ctx.moveTo(xx,yy);first=false;}else ctx.lineTo(xx,yy);
   }
   ctx.stroke();
-  if(wP>.04&&alpha>.1){
+  // Leading dot only while wave is still travelling in
+  if(wP>.04&&wP<.98&&alpha>.3){
     const hy=cy+Math.sin(headX*freq*Math.PI*2+phase)*amp;
     ctx.shadowBlur=10;ctx.fillStyle=`rgba(${r},${g},${b},${alpha})`;
     ctx.beginPath();ctx.arc(headX,hy,3,0,Math.PI*2);ctx.fill();
