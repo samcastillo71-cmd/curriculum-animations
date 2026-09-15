@@ -269,11 +269,6 @@ function drawProtein(cy,cx,nm,opsin,act,perceivedCol,animT){
   ctx.fillStyle='rgba(130,140,165,.88)';ctx.font='6px system-ui';ctx.textAlign='center';
   ctx.fillText(`${shortName} · ${opsin.peak}nm`,cx,cy-meterR-4);
 
-  // Peak-color swatch dot below disc
-  const[pr,pg,pb]=spectralRGB(opsin.peak);
-  ctx.fillStyle=`rgb(${pr},${pg},${pb})`;
-  ctx.beginPath();ctx.arc(cx,cy+PROT_DISC_R+10,3,0,Math.PI*2);ctx.fill();
-
   ctx.restore();
 }
 
