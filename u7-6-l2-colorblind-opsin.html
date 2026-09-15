@@ -326,7 +326,7 @@ function drawSlider(nm){
     const lw=36,lh=14,lx=px-lw/2,ly=LABEL_Y+1;
     rr(lx,ly,lw,lh,7);
     ctx.fillStyle=active?`rgba(${r},${g},${b},.92)`:'rgba(40,55,90,.5)';ctx.fill();
-    ctx.font=(active?'bold ':'')+'7px system-ui';ctx.fillStyle=active?'#fff':'rgba(160,175,205,.7)';
+    ctx.font=(active?'bold ':'')+'8px system-ui';ctx.fillStyle=active?'#fff':'rgba(160,175,205,.7)';
     ctx.textAlign='center';ctx.fillText(NM_NAMES[p],px,ly+lh*.72);
   });
 
@@ -334,7 +334,7 @@ function drawSlider(nm){
   ctx.fillStyle='rgba(140,155,180,.75)';ctx.font='6px system-ui';ctx.textAlign='center';
   [400,500,600,700].forEach(tnm=>{
     const tx=x+w*(tnm-380)/320;
-    ctx.fillText(tnm+'nm',tx,y-4);
+    ctx.fillText(tnm+'nm',tx,y-2);
   });
 
   const selX=x+w*(nm-380)/320;
