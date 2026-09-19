@@ -260,10 +260,10 @@ function drawAxon(synAct){
   if(sa>.02&&sa<.92){
     const pulseY=lerp(AX_TOP,AX_BOT,sa);
     ctx.save();
-    const pg=ctx.createRadialGradient(CX,pulseY,0,CX,pulseY,10);
-    pg.addColorStop(0,rgba(C.sig,.72));pg.addColorStop(1,rgba(C.sig,0));
-    ctx.fillStyle=pg;ctx.beginPath();ctx.arc(CX,pulseY,10,0,Math.PI*2);ctx.fill();
-    ctx.fillStyle=rgba([255,255,255],.85);ctx.beginPath();ctx.arc(CX,pulseY,3,0,Math.PI*2);ctx.fill();
+    const pg=ctx.createRadialGradient(CX,pulseY,0,CX,pulseY,16);
+    pg.addColorStop(0,rgba(C.sig,1.0));pg.addColorStop(1,rgba(C.sig,0));
+    ctx.fillStyle=pg;ctx.beginPath();ctx.arc(CX,pulseY,16,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle=rgba([255,255,255],1.0);ctx.beginPath();ctx.arc(CX,pulseY,5,0,Math.PI*2);ctx.fill();
     ctx.restore();
   }
 }

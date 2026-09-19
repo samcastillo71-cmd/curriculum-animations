@@ -282,7 +282,7 @@ function drawSignalPulse(cy,color,act,animT){
   if(p<=0||p>=1) return;
   const x=lerp(SIG_X0,SIG_X1,ease(p));
   const[r,g,b]=color;
-  const s=Math.max(.18,act);
+  const s=0.88; // fixed strength — signal fires identically for all colorblind types
   ctx.save();
   // Comet tail — three faded glows trailing the head
   [18,12,6].forEach((off,i)=>{
